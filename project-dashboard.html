@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Coding Screener Dashboard</title>
+    <style>
+        /* Design tokens for AI Coding Screener project */
+        :root {
+            /* Color palette - coding theme with warm accents */
+            --primary: #2563eb;      /* Blue for tech feel */
+            --accent: #f59e0b;       /* Amber for highlights */
+            --success: #10b981;      /* Green for completed items */
+            --warning: #ef4444;      /* Red for blockers */
+            --neutral-50: #f8fafc;   /* Light backgrounds */
+            --neutral-900: #0f172a;  /* Dark text */
+            --surface: #ffffff;      /* Card surfaces */
+
+            /* Typography */
+            --font-display: 'Inter', system-ui, sans-serif;
+            --font-body: 'Inter', system-ui, sans-serif;
+            --font-mono: 'Monaco', 'Menlo', monospace;
+
+            /* Layout concept: Dashboard grid with status cards and progress tracking */
+            color-scheme: light;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --primary: #3b82f6;
+                --accent: #fbbf24;
+                --success: #34d399;
+                --warning: #f87171;
+                --neutral-50: #1e293b;
+                --neutral-900: #f1f5f9;
+                --surface: #334155;
+                color-scheme: dark;
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --primary: #3b82f6;
+            --accent: #fbbf24;
+            --success: #34d399;
+            --warning: #f87171;
+            --neutral-50: #1e293b;
+            --neutral-900: #f1f5f9;
+            --surface: #334155;
+            color-scheme: dark;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--neutral-50);
+            color: var(--neutral-900);
+            line-height: 1.6;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            text-wrap: balance;
+        }
+
+        .header p {
+            color: var(--neutral-900);
+            opacity: 0.7;
+            font-size: 1.1rem;
+        }
+
+        .status-banner {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .status-banner h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--neutral-50);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success), var(--accent));
+            transition: width 0.3s ease;
+        }
+
+        .status-list {
+            list-style: none;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .status-icon.completed {
+            background: var(--success);
+        }
+
+        .status-icon.in-progress {
+            background: var(--accent);
+        }
+
+        .status-icon.pending {
+            background: var(--neutral-900);
+            opacity: 0.3;
+        }
+
+        .status-icon.blocked {
+            background: var(--warning);
+        }
+
+        .command-section {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .command-section h3 {
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .command-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .command-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .command-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .command-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .metric-card {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-top: 0.25rem;
+        }
+
+        .architecture-section {
+            margin-top: 3rem;
+        }
+
+        .architecture-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .component-card {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 1.5rem;
+            border-left: 4px solid var(--accent);
+        }
+
+        .component-card h4 {
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        .component-card ul {
+            list-style: none;
+            font-size: 0.9rem;
+            line-height: 1.8;
+        }
+
+        .component-card li:before {
+            content: "→";
+            color: var(--accent);
+            margin-right: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>AI Real-Time Coding Screener</h1>
+            <p>Development Dashboard & Project Status</p>
+        </header>
+
+        <div class="status-banner">
+            <h2>🚀 Phase 0: Core Infrastructure Setup</h2>
+            <p>All blocking questions resolved • ICM+MVC structure in progress • Ready to implement</p>
+        </div>
+
+        <div class="grid">
+            <!-- Blocking Questions Card -->
+            <div class="card">
+                <h3>Blocking Questions Status</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <ul class="status-list">
+                    <li class="status-item">
+                        <div class="status-icon completed">✓</div>
+                        <span>Q2: Python only for first release</span>
+                    </li>
+                    <li class="status-item">
+                        <div class="status-icon completed">✓</div>
+                        <span>Q3: Built-in problem bank with test cases</span>
+                    </li>
+                    <li class="status-item">
+                        <div class="status-icon completed">✓</div>
+                        <span>Q4: Switchable LLM (local + hosted)</span>
+                    </li>
+                    <li class="status-item">
+                        <div class="status-icon completed">✓</div>
+                        <span>Q5: Single-user local deployment</span>
+                    </li>
+                    <li class="status-item">
+                        <div class="status-icon completed">✓</div>
+                        <span>Q6: 2-week prototype timeline</span>
+                    </li>
+                    <li class="status-item">
+                        <div class="status-icon completed">✓</div>
+                        <span>Q7: Start from current repository</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Implementation Progress Card -->
+            <div class="card">
+                <h3>Implementation Progress</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 65%"></div>
+                </div>
+                <ul class="status-list">
+                    <li class="status-item">
+                        <div class="status-icon completed">✓</div>
+                        <span>ICM documentation layer</span>
+                    </li>
+                    <li class="status-item">
+                        <div class="status-icon completed">✓</div>
+                        <span>Folder structure (backend/frontend/sandbox)</span>
+                    </li>
+                    <li class="status-item">
+                        <div class="status-icon completed">✓</div>
+                        <span>Data models (Sessions, Problems, Analysis)</span>
+                    </li>
+                    <li class="status-item">
+                        <div class="status-icon in-progress">⚡</div>
+                        <span>API controllers (Health, Sessions, Mentor)</span>
+                    </li>
+                    <li class="status-item">
+                        <div class="status-icon in-progress">⚡</div>
+                        <span>Package configurations & tooling</span>
+                    </li>
+                    <li class="status-item">
+                        <div class="status-icon pending">○</div>
+                        <span>Frontend React app structure</span>
+                    </li>
+                    <li class="status-item">
+                        <div class="status-icon pending">○</div>
+                        <span>Sandbox Docker configuration</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Next Steps Card -->
+            <div class="card">
+                <h3>Immediate Next Steps</h3>
+                <ul class="status-list">
+                    <li class="status-item">
+                        <div class="status-icon in-progress">1</div>
+                        <span>Complete frontend React structure</span>
+                    </li>
+                    <li class="status-item">
+                        <div class="status-icon pending">2</div>
+                        <span>Create Docker sandbox configuration</span>
+                    </li>
+                    <li class="status-item">
+                        <div class="status-icon pending">3</div>
+                        <span>Set up development environment</span>
+                    </li>
+                    <li class="status-item">
+                        <div class="status-icon pending">4</div>
+                        <span>Initialize database with sample data</span>
+                    </li>
+                    <li class="status-item">
+                        <div class="status-icon pending">5</div>
+                        <span>Create basic problem bank</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="metrics">
+            <div class="metric-card">
+                <div class="metric-value">6/6</div>
+                <div class="metric-label">Questions Resolved</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">65%</div>
+                <div class="metric-label">Phase 0 Complete</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">2</div>
+                <div class="metric-label">Weeks Timeline</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">3</div>
+                <div class="metric-label">Core Components</div>
+            </div>
+        </div>
+
+        <div class="command-section">
+            <h3>Development Commands (Available after setup)</h3>
+            <div class="command-grid">
+                <button class="command-btn" disabled>make dev-backend</button>
+                <button class="command-btn" disabled>make dev-frontend</button>
+                <button class="command-btn" disabled>make sandbox-build</button>
+                <button class="command-btn" disabled>make test</button>
+                <button class="command-btn" disabled>make db-up</button>
+                <button class="command-btn" disabled>make check</button>
+            </div>
+            <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.7;">
+                Commands will be enabled once the basic project setup is complete.
+            </p>
+        </div>
+
+        <div class="architecture-section">
+            <h3>ICM + MVC Architecture</h3>
+            <div class="architecture-grid">
+                <div class="component-card">
+                    <h4>ICM Layer (Navigation)</h4>
+                    <ul>
+                        <li>CLAUDE.md - Project catalog</li>
+                        <li>docs/ - Context & decisions</li>
+                        <li>Status tracking</li>
+                        <li>Routing guidelines</li>
+                    </ul>
+                </div>
+
+                <div class="component-card">
+                    <h4>Backend MVC</h4>
+                    <ul>
+                        <li>Models: Session, Problem, Analysis</li>
+                        <li>Views: API response schemas</li>
+                        <li>Controllers: Request handlers</li>
+                        <li>Core: Config, database, security</li>
+                    </ul>
+                </div>
+
+                <div class="component-card">
+                    <h4>Frontend MVC</h4>
+                    <ul>
+                        <li>Models: Client data types</li>
+                        <li>Views: React components</li>
+                        <li>Controllers: Event handlers</li>
+                        <li>Monaco editor integration</li>
+                    </ul>
+                </div>
+
+                <div class="component-card">
+                    <h4>Sandbox MVC</h4>
+                    <ul>
+                        <li>Models: Execution specs</li>
+                        <li>Views: Result formatters</li>
+                        <li>Controllers: Code runners</li>
+                        <li>Docker isolation</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add interactive behavior
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate progress bars on load
+            const progressBars = document.querySelectorAll('.progress-fill');
+            progressBars.forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 300);
+            });
+
+            // Add hover effects to status items
+            const statusItems = document.querySelectorAll('.status-item');
+            statusItems.forEach(item => {
+                item.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = 'rgba(37, 99, 235, 0.05)';
+                });
+                item.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = 'transparent';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
