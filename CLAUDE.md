@@ -12,11 +12,28 @@ The filled project brief (goal, scope, constraints, priorities, success criteria
 
 ## Read on demand (not imported, to keep this file small)
 
+**ICM Layer Navigation (Infrastructure-Component-Module)**
+- `docs/ICM-INDEX.md` — complete documentation catalog and navigation guide
+- `docs/ICM-ROUTING.md` — quick access paths for different developer roles and tasks
+
+**Essential Project Documents**
 - `docs/02-STATUS.md` — current project state and what's been built
 - `docs/03-ARCHITECTURE.md` — components, flows, contracts, data model, safety design
 - `docs/04-FOLDER-STRUCTURE.md` — repo tree, import rules, file manifest per phase
 - `docs/05-IMPLEMENTATION-PLAN.md` — phases, steps, verification, exit criteria (read **only the current phase**)
-- `docs/06-DEPENDENCIES-AND-COMMANDS.md`, `docs/07-TESTING-AND-VALIDATION.md`, `docs/08-ROLLBACK-AND-FAILURE-HANDLING.md`, `docs/09-RISKS-AND-EDGE-CASES.md`, `docs/10-OPEN-QUESTIONS.md`, `docs/11-FINAL-CHECKLIST.md`
+
+**Full Documentation Suite**
+- `docs/00-PROJECT-BRIEF.md` — project goal, scope, constraints, success criteria
+- `docs/01-STACK-AND-ABSTRACT-REVIEW.md` — technology stack validation and risk assessment
+- `docs/02-REQUIREMENTS.md` — functional and non-functional requirements with priorities
+- `docs/06-DEPENDENCIES-AND-COMMANDS.md` — package versions, environment setup, development commands
+- `docs/07-TESTING-AND-VALIDATION.md` — test suites, acceptance scenarios, traceability matrix
+- `docs/08-ROLLBACK-AND-FAILURE-HANDLING.md` — phase rollback procedures and failure modes
+- `docs/09-RISKS-AND-EDGE-CASES.md` — risk register and edge case catalog
+- `docs/10-OPEN-QUESTIONS.md` — blocking questions resolved, decision log
+- `docs/11-FINAL-CHECKLIST.md` — release readiness and phase-exit checklists
+- `docs/12-REVIEW-LOG.md` — review cycles and feedback incorporation
+- `docs/adr/` — architecture decision records (ADRs)
 
 ## Execution rules (apply to every task)
 

@@ -1,0 +1,79 @@
+{
+  "name": "ai-coding-mentor",
+  "private": true,
+  "version": "0.0.0",
+  "description": "AI Real-Time Coding Screener - A web app that watches learner code and provides progressive hints",
+  "type": "module",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "sandbox",
+    "eval"
+  ],
+  "scripts": {
+    "check": "npm run check:backend && npm run check:frontend",
+    "check:backend": "cd backend && uv run ruff check . && uv run ruff format --check . && uv run mypy .",
+    "check:frontend": "cd frontend && pnpm lint && pnpm typecheck && pnpm format:check",
+    "test": "npm run test:backend && npm run test:frontend && npm run test:sandbox",
+    "test:backend": "cd backend && uv run pytest",
+    "test:frontend": "cd frontend && pnpm test",
+    "test:sandbox": "cd sandbox && uv run pytest tests",
+    "types": "cd backend && uv run python -m app.schemas.export && cd ../frontend && pnpm json-schema-to-typescript",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down -v",
+    "db:migrate": "cd backend && uv run alembic upgrade head",
+    "dev:backend": "cd backend && uv run uvicorn app.main:app --reload --port 8000",
+    "dev:frontend": "cd frontend && pnpm dev",
+    "sandbox:build": "docker build -t mentor-sandbox-python sandbox/images/python",
+    "eval": "cd eval && uv run python harness/run_eval.py",
+    "bench": "cd eval && uv run python harness/bench_latency.py",
+    "e2e": "cd frontend && pnpm playwright test",
+    "setup": "npm run setup:backend && npm run setup:frontend && npm run setup:sandbox && npm run setup:eval",
+    "setup:backend": "cd backend && uv sync",
+    "setup:frontend": "cd frontend && pnpm install",
+    "setup:sandbox": "cd sandbox && uv sync",
+    "setup:eval": "cd eval && uv sync",
+    "clean": "npm run clean:backend && npm run clean:frontend && npm run clean:sandbox",
+    "clean:backend": "cd backend && rm -rf .venv __pycache__ .pytest_cache .mypy_cache .ruff_cache",
+    "clean:frontend": "cd frontend && rm -rf node_modules dist .vite",
+    "clean:sandbox": "cd sandbox && rm -rf .venv __pycache__ .pytest_cache"
+  },
+  "devDependencies": {
+    "prettier": "^3.1.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx,json,css,md}": [
+      "prettier --write"
+    ],
+    "*.py": [
+      "cd backend && uv run ruff format",
+      "cd backend && uv run ruff check --fix"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@11.8.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ai-coding-mentor/ai-coding-mentor.git"
+  },
+  "license": "MIT",
+  "authors": [
+    "AI Coding Mentor Team"
+  ],
+  "keywords": [
+    "ai",
+    "coding",
+    "education",
+    "mentor",
+    "real-time",
+    "fastapi",
+    "react",
+    "typescript",
+    "python"
+  ]
+}
