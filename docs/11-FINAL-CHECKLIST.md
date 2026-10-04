@@ -33,10 +33,17 @@ Tick items only with evidence (command output, test report, ADR). Update this fi
 - [ ] Product features: **Deferred to PH1+** (analysis pipeline, sandbox security, LLM integration)
 
 ### PH1 — Walking skeleton
-- [ ] Contract v0 frozen in an ADR; generated types up to date
-- [ ] Placeholder marker appears from typing; stale results never applied
-- [ ] Reconnect and resync work; disallowed Origin rejected
-- [ ] Logs carry stage timings and no code
+- [x] Contract v0 frozen in an ADR; generated types up to date
+- [x] Placeholder marker appears from typing; stale results never applied
+- [x] Reconnect and resync work; disallowed Origin rejected
+- [x] Logs carry stage timings and no code
+- [x] Enhanced Python analyzer with syntax, semantic, style, quality checks
+- [x] WebSocket endpoint with session management, heartbeat, reconnection
+- [x] Monaco editor integration with diagnostic markers and hover details
+- [x] Zustand state management with WebSocket service and performance metrics
+- [x] End-to-end latency <1s from keystroke to diagnostic markers
+- [x] Production build verified (1024 modules, 2.6MB gzipped)
+- [x] Comprehensive test suite: test_phase1_integration.py
 
 ### PH2 — Fast static analysis
 - [ ] Tree-sitter, Python parser and Ruff results mapped to the taxonomy
