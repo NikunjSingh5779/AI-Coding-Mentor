@@ -8,7 +8,7 @@ the FastAPI application with WebSocket support for real-time code analysis.
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -100,8 +100,10 @@ def create_app() -> FastAPI:
     # Include routers
     app.include_router(health_router, prefix="/api/v1", tags=["health"])
 
-    # WebSocket endpoint
-    app.websocket("/ws")(websocket_endpoint)
+    # WebSocket endpoint for real-time code analysis
+    @app.websocket("/ws/code-analysis")
+    async def websocket_code_analysis(websocket: WebSocket, session_token: str = "anonymous"):
+        await websocket_endpoint(websocket, session_token)
 
     return app
 
