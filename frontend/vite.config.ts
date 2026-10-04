@@ -17,7 +17,6 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
       },
       '/ws': {
         target: 'ws://localhost:8000',
@@ -31,10 +30,17 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router'],
+          vendor: ['react', 'react-dom'],
           monaco: ['@monaco-editor/react', 'monaco-editor'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
         },
       },
     },
+  },
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', '@monaco-editor/react'],
   },
 })

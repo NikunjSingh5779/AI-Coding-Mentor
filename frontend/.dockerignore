@@ -1,0 +1,47 @@
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+.pnpm-store
+
+# Build outputs
+dist
+build
+.next
+out
+
+# Testing
+coverage
+.nyc_output
+test-results
+playwright-report
+
+# Environment
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+
+# Other
+README.md
+LICENSE
+*.md

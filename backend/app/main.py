@@ -1,44 +1,65 @@
 """
-Core FastAPI application for AI Real-Time Coding Screener
-Following ICM+MVC pattern: Controllers handle request routing and logic
+AI Real-Time Coding Screener - Main FastAPI Application
+
+This is the composition root that wires all modules together and creates
+the FastAPI application with WebSocket support for real-time code analysis.
 """
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+
 from contextlib import asynccontextmanager
-import uvicorn
 from typing import AsyncGenerator
 
-from .core.config import get_settings
-from .core.database import init_database, close_database
-from .controllers.health_controller import router as health_router
-from .controllers.session_controller import router as session_router
-from .controllers.mentor_controller import router as mentor_router
-from .controllers.analysis_controller import router as analysis_router
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from app.config import get_settings
+from app.core.errors import AppError
+from app.core.events import EventBus
+from app.core.logging import setup_logging, get_logger
+from app.ws.endpoint import websocket_endpoint
+from app.api.health import router as health_router
+
+
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Application lifespan management"""
-    # Startup
+    """Application lifespan manager for startup and shutdown tasks."""
     settings = get_settings()
-    await init_database(settings.database_url)
+    logger.info("Starting AI Coding Mentor application", extra={"version": "0.1.0"})
+
+    # Initialize event bus
+    event_bus = EventBus()
+    app.state.event_bus = event_bus
+
+    # Log configuration
+    logger.info("Application configured", extra={
+        "debug": settings.debug,
+        "cors_origins": settings.cors_origins,
+        "feature_screen_source": settings.feature_screen_source
+    })
 
     yield
 
-    # Shutdown
-    await close_database()
+    # Cleanup
+    logger.info("Shutting down AI Coding Mentor application")
 
 
 def create_app() -> FastAPI:
-    """Application factory following MVC pattern"""
+    """Create and configure the FastAPI application."""
     settings = get_settings()
 
+    # Setup structured logging
+    setup_logging(settings.log_level, settings.debug)
+
     app = FastAPI(
-        title="AI Real-Time Coding Screener API",
-        description="Backend API for AI-powered coding assistance and mentoring",
+        title="AI Real-Time Coding Screener",
+        description="Real-time code analysis with progressive mentoring hints",
         version="0.1.0",
         lifespan=lifespan,
+        docs_url="/docs" if settings.debug else None,
+        redoc_url="/redoc" if settings.debug else None
     )
 
     # CORS middleware for frontend communication
@@ -46,29 +67,54 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["*"],
     )
 
-    # Register controllers (routing layer)
+    # Exception handlers
+    @app.exception_handler(AppError)
+    async def app_error_handler(request, exc: AppError):
+        logger.error("Application error", extra={
+            "error_type": type(exc).__name__,
+            "message": str(exc),
+            "path": request.url.path
+        })
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"error": exc.message, "type": exc.error_type}
+        )
+
+    @app.exception_handler(Exception)
+    async def general_exception_handler(request, exc: Exception):
+        logger.exception("Unhandled exception", extra={
+            "path": request.url.path
+        })
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Internal server error", "type": "internal_error"}
+        )
+
+    # Include routers
     app.include_router(health_router, prefix="/api/v1", tags=["health"])
-    app.include_router(session_router, prefix="/api/v1", tags=["sessions"])
-    app.include_router(mentor_router, prefix="/api/v1", tags=["mentor"])
-    app.include_router(analysis_router, prefix="/api/v1", tags=["analysis"])
+
+    # WebSocket endpoint
+    app.websocket("/ws")(websocket_endpoint)
 
     return app
 
 
-# Application instance
+# Create the app instance
 app = create_app()
 
 
 if __name__ == "__main__":
+    import uvicorn
+
     settings = get_settings()
     uvicorn.run(
-        "app.main:app",
-        host=settings.host,
-        port=settings.port,
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
         reload=settings.debug,
-        log_level="debug" if settings.debug else "info",
+        log_config=None  # Use our custom logging setup
     )
