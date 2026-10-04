@@ -1,8 +1,8 @@
 # 02 — Project Status
 
-**Current Status:** Phase 0 Complete — Baseline Toolchain Operational  
+**Current Status:** Phase 0 Complete ✅ — Ready for Phase 1  
 **Last Updated:** 2026-10-04  
-**Branch:** `phase/0-baseline-toolchain`  
+**Branch:** `main` (phase-0-complete tag applied)  
 
 ## ✅ Phase 0 Achievements
 
