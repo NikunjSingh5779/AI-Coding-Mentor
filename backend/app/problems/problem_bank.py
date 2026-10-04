@@ -42,7 +42,7 @@ print(fibonacci(10)) # Should print 55""",
             {"input": {"n": 2}, "expected": 1, "description": "F(2) = F(1) + F(0)"},
             {"input": {"n": 5}, "expected": 5, "description": "F(5)"},
             {"input": {"n": 10}, "expected": 55, "description": "F(10)"},
-        ]
+        ],
     },
     {
         "id": "palindrome_check",
@@ -72,12 +72,28 @@ print(is_palindrome("hello"))  # Should print False""",
     # Check if it reads the same forwards and backwards
     return normalized == normalized[::-1]""",
         "test_cases": [
-            {"input": {"s": "racecar"}, "expected": True, "description": "Simple palindrome"},
-            {"input": {"s": "A man a plan a canal Panama"}, "expected": True, "description": "Palindrome with spaces"},
-            {"input": {"s": "hello"}, "expected": False, "description": "Not a palindrome"},
-            {"input": {"s": "Madam"}, "expected": True, "description": "Case insensitive"},
+            {
+                "input": {"s": "racecar"},
+                "expected": True,
+                "description": "Simple palindrome",
+            },
+            {
+                "input": {"s": "A man a plan a canal Panama"},
+                "expected": True,
+                "description": "Palindrome with spaces",
+            },
+            {
+                "input": {"s": "hello"},
+                "expected": False,
+                "description": "Not a palindrome",
+            },
+            {
+                "input": {"s": "Madam"},
+                "expected": True,
+                "description": "Case insensitive",
+            },
             {"input": {"s": ""}, "expected": True, "description": "Empty string"},
-        ]
+        ],
     },
     {
         "id": "sum_of_digits",
@@ -110,7 +126,7 @@ print(sum_of_digits(5))    # Should print 5""",
             {"input": {"n": 999}, "expected": 27, "description": "Same digits"},
             {"input": {"n": 5}, "expected": 5, "description": "Single digit"},
             {"input": {"n": 1000}, "expected": 1, "description": "With zeros"},
-        ]
+        ],
     },
     {
         "id": "find_maximum",
@@ -144,11 +160,27 @@ print(find_max([42]))              # Should print 42""",
             maximum = num
     return maximum""",
         "test_cases": [
-            {"input": {"numbers": [1, 3, 2, 8, 5]}, "expected": 8, "description": "Mixed positive numbers"},
-            {"input": {"numbers": [-1, -5, -2]}, "expected": -1, "description": "All negative numbers"},
-            {"input": {"numbers": [42]}, "expected": 42, "description": "Single element"},
-            {"input": {"numbers": [5, 5, 5]}, "expected": 5, "description": "All same numbers"},
-        ]
+            {
+                "input": {"numbers": [1, 3, 2, 8, 5]},
+                "expected": 8,
+                "description": "Mixed positive numbers",
+            },
+            {
+                "input": {"numbers": [-1, -5, -2]},
+                "expected": -1,
+                "description": "All negative numbers",
+            },
+            {
+                "input": {"numbers": [42]},
+                "expected": 42,
+                "description": "Single element",
+            },
+            {
+                "input": {"numbers": [5, 5, 5]},
+                "expected": 5,
+                "description": "All same numbers",
+            },
+        ],
     },
     {
         "id": "count_vowels",
@@ -181,12 +213,16 @@ print(count_vowels("xyz"))          # Should print 0""",
     return count""",
         "test_cases": [
             {"input": {"text": "hello"}, "expected": 2, "description": "Mixed case"},
-            {"input": {"text": "PROGRAMMING"}, "expected": 3, "description": "Uppercase"},
+            {
+                "input": {"text": "PROGRAMMING"},
+                "expected": 3,
+                "description": "Uppercase",
+            },
             {"input": {"text": "xyz"}, "expected": 0, "description": "No vowels"},
             {"input": {"text": "aeiou"}, "expected": 5, "description": "All vowels"},
             {"input": {"text": ""}, "expected": 0, "description": "Empty string"},
-        ]
-    }
+        ],
+    },
 ]
 
 

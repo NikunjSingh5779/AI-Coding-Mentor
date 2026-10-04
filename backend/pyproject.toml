@@ -2,21 +2,22 @@
 name = "mentor-backend"
 version = "0.1.0"
 description = "AI Real-Time Coding Screener - Backend API"
-authors = ["AI Real-Time Coding Screener Team"]
+authors = [{name = "AI Real-Time Coding Screener Team"}]
 requires-python = ">=3.11"
 readme = "README.md"
 
-[project.dependencies]
-fastapi = "^0.104.0"
-uvicorn = {extras = ["standard"], version = "^0.24.0"}
-pydantic = "^2.5.0"
-pydantic-settings = "^2.1.0"
-sqlalchemy = {extras = ["asyncio"], version = "^2.0.0"}
-asyncpg = "^0.29.0"
-alembic = "^1.13.0"
-httpx = "^0.25.0"
-tree-sitter = "^0.20.0"
-structlog = "^23.2.0"
+dependencies = [
+    "fastapi>=0.104.0,<1",
+    "uvicorn[standard]>=0.24.0,<1",
+    "pydantic>=2.5.0,<3",
+    "pydantic-settings>=2.1.0,<3",
+    "sqlalchemy[asyncio]>=2.0.0,<3",
+    "asyncpg>=0.29.0,<1",
+    "alembic>=1.13.0,<2",
+    "httpx>=0.25.0,<1",
+    "tree-sitter>=0.20.0,<1",
+    "structlog>=23.2.0,<25",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -30,6 +31,9 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
 
 [tool.ruff]
 line-length = 88

@@ -2,33 +2,34 @@
 Health Controller - API endpoints for system health checks
 Following MVC pattern: Controllers handle request routing and business logic
 """
+
+import time
+from typing import Any
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, Any
-import asyncio
-import time
 
-from ..core.database import get_db_session
 from ..core.config import get_settings
+from ..core.database import get_db_session
 
 router = APIRouter()
 
 
-@router.get("/health", response_model=Dict[str, Any])
-async def health_check() -> Dict[str, Any]:
+@router.get("/health", response_model=dict[str, Any])
+async def health_check() -> dict[str, Any]:
     """Basic health check endpoint"""
     return {
         "status": "healthy",
         "timestamp": int(time.time()),
         "service": "ai-coding-screener-api",
-        "version": "0.1.0"
+        "version": "0.1.0",
     }
 
 
-@router.get("/health/detailed", response_model=Dict[str, Any])
+@router.get("/health/detailed", response_model=dict[str, Any])
 async def detailed_health_check(
-    db: AsyncSession = Depends(get_db_session)
-) -> Dict[str, Any]:
+    db: AsyncSession = Depends(get_db_session),
+) -> dict[str, Any]:
     """Detailed health check including database connectivity"""
     settings = get_settings()
 
@@ -47,26 +48,20 @@ async def detailed_health_check(
 
     # System checks
     checks = {
-        "database": {
-            "healthy": db_healthy,
-            "latency_ms": db_latency_ms
-        },
+        "database": {"healthy": db_healthy, "latency_ms": db_latency_ms},
         "llm_config": {
             "provider": settings.llm_provider,
             "model": settings.llm_model_name,
-            "configured": bool(settings.llm_local_url or settings.llm_hosted_api_key)
-        }
+            "configured": bool(settings.llm_local_url or settings.llm_hosted_api_key),
+        },
     }
 
-    overall_healthy = all(
-        check.get("healthy", True)
-        for check in checks.values()
-    )
+    overall_healthy = all(check.get("healthy", True) for check in checks.values())
 
     return {
         "status": "healthy" if overall_healthy else "degraded",
         "timestamp": int(time.time()),
         "service": "ai-coding-screener-api",
         "version": "0.1.0",
-        "checks": checks
+        "checks": checks,
     }

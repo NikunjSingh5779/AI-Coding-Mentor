@@ -1,17 +1,17 @@
 """
 Complete Analysis Controller with Multi-Provider AI Integration
 """
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from typing import List, Dict, Any
+
 import hashlib
-import asyncio
 import logging
 
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..analysis.python_analyzer import analyzer
 from ..core.database import get_db_session
 from ..models.session import CodeAnalysis, CodingSession
-from ..analysis.python_analyzer import analyzer
 from ..views.session_views import AnalysisResponse
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ async def analyze_code(
     session_token: str,
     code: str,
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
 ):
     """
     Complete code analysis pipeline with Python AST parsing, linting, and execution
@@ -31,8 +31,7 @@ async def analyze_code(
 
     # Verify session exists
     session_query = select(CodingSession).where(
-        CodingSession.session_token == session_token,
-        CodingSession.is_active == True
+        CodingSession.session_token == session_token, CodingSession.is_active == True
     )
     session = await db.scalar(session_query)
 
@@ -45,8 +44,7 @@ async def analyze_code(
     # Check if we've already analyzed this exact code
     existing_analysis = await db.scalar(
         select(CodeAnalysis).where(
-            CodeAnalysis.session_id == session.id,
-            CodeAnalysis.code_hash == code_hash
+            CodeAnalysis.session_id == session.id, CodeAnalysis.code_hash == code_hash
         )
     )
 
@@ -55,7 +53,7 @@ async def analyze_code(
             "cached": True,
             "analysis_id": existing_analysis.id,
             "findings": existing_analysis.findings,
-            "severity": existing_analysis.severity
+            "severity": existing_analysis.severity,
         }
 
     # Run complete Python analysis
@@ -80,7 +78,7 @@ async def analyze_code(
             code_hash=code_hash,
             findings=analysis_results,
             severity=severity,
-            is_blocking=(severity == "error")
+            is_blocking=(severity == "error"),
         )
 
         db.add(new_analysis)
@@ -99,7 +97,7 @@ async def analyze_code(
             "findings": analysis_results,
             "severity": severity,
             "is_blocking": new_analysis.is_blocking,
-            "diagnostics_count": len(analysis_results["diagnostics"])
+            "diagnostics_count": len(analysis_results["diagnostics"]),
         }
 
     except Exception as e:
@@ -114,7 +112,7 @@ async def analyze_code(
             code_hash=code_hash,
             findings={"error": str(e), "type": "analysis_failure"},
             severity="critical",
-            is_blocking=True
+            is_blocking=True,
         )
 
         db.add(error_analysis)
@@ -127,15 +125,14 @@ async def analyze_code(
             "findings": {"error": str(e)},
             "severity": "critical",
             "is_blocking": True,
-            "error": f"Analysis failed: {str(e)}"
+            "error": f"Analysis failed: {str(e)}",
         }
 
 
-@router.get("/analyses/{session_token}", response_model=List[AnalysisResponse])
+@router.get("/analyses/{session_token}", response_model=list[AnalysisResponse])
 async def get_analyses(
-    session_token: str,
-    db: AsyncSession = Depends(get_db_session)
-) -> List[AnalysisResponse]:
+    session_token: str, db: AsyncSession = Depends(get_db_session)
+) -> list[AnalysisResponse]:
     """Get all analyses for a session"""
 
     # Get session
@@ -148,9 +145,11 @@ async def get_analyses(
         raise HTTPException(status_code=404, detail="Session not found")
 
     # Get all analyses
-    analyses_query = select(CodeAnalysis).where(
-        CodeAnalysis.session_id == session.id
-    ).order_by(CodeAnalysis.created_at.desc())
+    analyses_query = (
+        select(CodeAnalysis)
+        .where(CodeAnalysis.session_id == session.id)
+        .order_by(CodeAnalysis.created_at.desc())
+    )
 
     result = await db.execute(analyses_query)
     analyses = result.scalars().all()
@@ -159,10 +158,7 @@ async def get_analyses(
 
 
 @router.delete("/analyses/{analysis_id}")
-async def delete_analysis(
-    analysis_id: int,
-    db: AsyncSession = Depends(get_db_session)
-):
+async def delete_analysis(analysis_id: int, db: AsyncSession = Depends(get_db_session)):
     """Delete a specific analysis"""
 
     analysis = await db.get(CodeAnalysis, analysis_id)
@@ -188,12 +184,12 @@ async def analysis_health():
             "status": "healthy",
             "analyzer": "python_analyzer",
             "test_passed": True,
-            "diagnostics_found": len(result["diagnostics"])
+            "diagnostics_found": len(result["diagnostics"]),
         }
     except Exception as e:
         return {
             "status": "unhealthy",
             "analyzer": "python_analyzer",
             "test_passed": False,
-            "error": str(e)
+            "error": str(e),
         }

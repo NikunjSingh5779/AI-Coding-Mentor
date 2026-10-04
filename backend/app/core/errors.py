@@ -2,17 +2,13 @@
 Core error definitions and WebSocket/REST error mapping.
 """
 
-from typing import Optional
 
 
 class AppError(Exception):
     """Base application error with status code and error type."""
 
     def __init__(
-        self,
-        message: str,
-        status_code: int = 500,
-        error_type: str = "internal_error"
+        self, message: str, status_code: int = 500, error_type: str = "internal_error"
     ):
         super().__init__(message)
         self.message = message

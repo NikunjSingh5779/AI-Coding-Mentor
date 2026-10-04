@@ -5,8 +5,8 @@ Structured JSON logging with correlation IDs for the AI Coding Mentor applicatio
 import json
 import logging
 import sys
-from typing import Any, Dict, Optional
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 
 
 class JSONFormatter(logging.Formatter):
@@ -14,26 +14,46 @@ class JSONFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         """Format log record as JSON."""
-        log_data: Dict[str, Any] = {
-            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
+        log_data: dict[str, Any] = {
+            "timestamp": datetime.fromtimestamp(
+                record.created, tz=UTC
+            ).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
         }
 
         # Add correlation ID if present
-        if hasattr(record, 'correlation_id'):
+        if hasattr(record, "correlation_id"):
             log_data["correlation_id"] = record.correlation_id
 
         # Add extra fields from the log record
-        if hasattr(record, '__dict__'):
+        if hasattr(record, "__dict__"):
             for key, value in record.__dict__.items():
-                if key not in ['name', 'msg', 'args', 'levelname', 'levelno',
-                              'pathname', 'filename', 'module', 'lineno',
-                              'funcName', 'created', 'msecs', 'relativeCreated',
-                              'thread', 'threadName', 'processName', 'process',
-                              'getMessage', 'exc_info', 'exc_text', 'stack_info']:
-                    if key.startswith('_'):
+                if key not in [
+                    "name",
+                    "msg",
+                    "args",
+                    "levelname",
+                    "levelno",
+                    "pathname",
+                    "filename",
+                    "module",
+                    "lineno",
+                    "funcName",
+                    "created",
+                    "msecs",
+                    "relativeCreated",
+                    "thread",
+                    "threadName",
+                    "processName",
+                    "process",
+                    "getMessage",
+                    "exc_info",
+                    "exc_text",
+                    "stack_info",
+                ]:
+                    if key.startswith("_"):
                         continue
                     log_data[key] = value
 
@@ -58,7 +78,7 @@ def setup_logging(log_level: str = "INFO", debug: bool = False):
     if debug:
         # Human-readable format for development
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
     else:
         # JSON format for production
@@ -86,7 +106,7 @@ def get_logger(name: str) -> logging.Logger:
 class CorrelationFilter(logging.Filter):
     """Add correlation ID to log records when available."""
 
-    def __init__(self, correlation_id: Optional[str] = None):
+    def __init__(self, correlation_id: str | None = None):
         super().__init__()
         self.correlation_id = correlation_id
 

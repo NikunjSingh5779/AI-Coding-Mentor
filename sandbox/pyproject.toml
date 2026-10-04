@@ -2,15 +2,16 @@
 name = "mentor-sandbox-runner"
 version = "0.1.0"
 description = "AI Real-Time Coding Screener - Sandbox Runner"
-authors = ["AI Real-Time Coding Screener Team"]
+authors = [{name = "AI Real-Time Coding Screener Team"}]
 requires-python = ">=3.11"
 readme = "README.md"
 
-[project.dependencies]
-fastapi = "^0.104.0"
-uvicorn = {extras = ["standard"], version = "^0.24.0"}
-pydantic = "^2.5.0"
-docker = "^7.0.0"
+dependencies = [
+    "fastapi>=0.104.0,<1",
+    "uvicorn[standard]>=0.24.0,<1",
+    "pydantic>=2.5.0,<3",
+    "docker>=7.0.0,<8",
+]
 
 [project.optional-dependencies]
 dev = [

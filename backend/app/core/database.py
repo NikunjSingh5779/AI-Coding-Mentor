@@ -2,10 +2,12 @@
 Database configuration for AI Real-Time Coding Screener
 Following MVC pattern: Core layer handles database setup and connections
 """
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from typing import AsyncGenerator
+
 import logging
+from collections.abc import AsyncGenerator
+
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 # Base class for all models
 Base = declarative_base()
@@ -21,7 +23,7 @@ async def init_database(database_url: str) -> None:
     """Initialize database engine and session factory"""
     global engine, AsyncSessionLocal
 
-    logger.info(f"Initializing database connection...")
+    logger.info("Initializing database connection...")
 
     engine = create_async_engine(
         database_url,
@@ -31,9 +33,7 @@ async def init_database(database_url: str) -> None:
     )
 
     AsyncSessionLocal = sessionmaker(
-        engine,
-        class_=AsyncSession,
-        expire_on_commit=False
+        engine, class_=AsyncSession, expire_on_commit=False
     )
 
     # Create tables if they don't exist

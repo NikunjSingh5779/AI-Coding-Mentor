@@ -2,26 +2,27 @@
 AI Client Implementation for Multiple Providers
 Supports OpenRouter, NVIDIA NIM, Groq, Google AI, OpenAI, and Local LLMs
 """
-import asyncio
+
 import json
 import logging
-from typing import Optional, Dict, Any, List, AsyncGenerator
-from datetime import datetime
-import httpx
 from abc import ABC, abstractmethod
+from collections.abc import AsyncGenerator
+from typing import Any
+
+import httpx
 
 from .ai_config import (
     AIProviderConfig,
-    OpenRouterConfig,
-    NvidiaConfig,
-    GroqConfig,
     GoogleConfig,
-    OpenAIConfig,
+    GroqConfig,
     LocalConfig,
+    NvidiaConfig,
+    OpenAIConfig,
+    OpenRouterConfig,
     get_ai_settings,
-    get_provider_config,
     get_available_providers,
-    validate_provider_config
+    get_provider_config,
+    validate_provider_config,
 )
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,8 @@ logger = logging.getLogger(__name__)
 
 class AIProviderError(Exception):
     """Base exception for AI provider errors"""
-    def __init__(self, message: str, provider: str, status_code: Optional[int] = None):
+
+    def __init__(self, message: str, provider: str, status_code: int | None = None):
         super().__init__(message)
         self.provider = provider
         self.status_code = status_code
@@ -42,7 +44,7 @@ class AIProvider(ABC):
         self.config = config
         self.client = httpx.AsyncClient(
             timeout=config.timeout,
-            headers=config.get_headers() if hasattr(config, 'get_headers') else {}
+            headers=config.get_headers() if hasattr(config, "get_headers") else {},
         )
 
     async def __aenter__(self):
@@ -53,23 +55,19 @@ class AIProvider(ABC):
 
     @abstractmethod
     async def generate_completion(
-        self,
-        messages: List[Dict[str, str]],
-        **kwargs
+        self, messages: list[dict[str, str]], **kwargs
     ) -> str:
         """Generate a completion from messages"""
         pass
 
     @abstractmethod
     async def stream_completion(
-        self,
-        messages: List[Dict[str, str]],
-        **kwargs
+        self, messages: list[dict[str, str]], **kwargs
     ) -> AsyncGenerator[str, None]:
         """Stream a completion from messages"""
         pass
 
-    def format_messages(self, messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    def format_messages(self, messages: list[dict[str, str]]) -> list[dict[str, str]]:
         """Format messages for the provider (override if needed)"""
         return messages
 
@@ -79,12 +77,16 @@ class OpenRouterProvider(AIProvider):
 
     def __init__(self, config: OpenRouterConfig):
         super().__init__(config)
-        self.client.headers.update({
-            "HTTP-Referer": config.app_url,
-            "X-Title": config.app_name,
-        })
+        self.client.headers.update(
+            {
+                "HTTP-Referer": config.app_url,
+                "X-Title": config.app_name,
+            }
+        )
 
-    async def generate_completion(self, messages: List[Dict[str, str]], **kwargs) -> str:
+    async def generate_completion(
+        self, messages: list[dict[str, str]], **kwargs
+    ) -> str:
         try:
             response = await self.client.post(
                 f"{self.config.base_url}/chat/completions",
@@ -94,7 +96,7 @@ class OpenRouterProvider(AIProvider):
                     "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
                     "temperature": kwargs.get("temperature", self.config.temperature),
                     "stream": False,
-                }
+                },
             )
             response.raise_for_status()
 
@@ -102,9 +104,15 @@ class OpenRouterProvider(AIProvider):
             return result["choices"][0]["message"]["content"]
 
         except httpx.HTTPError as e:
-            raise AIProviderError(f"OpenRouter API error: {str(e)}", "openrouter", getattr(e.response, 'status_code', None))
+            raise AIProviderError(
+                f"OpenRouter API error: {str(e)}",
+                "openrouter",
+                getattr(e.response, "status_code", None),
+            )
 
-    async def stream_completion(self, messages: List[Dict[str, str]], **kwargs) -> AsyncGenerator[str, None]:
+    async def stream_completion(
+        self, messages: list[dict[str, str]], **kwargs
+    ) -> AsyncGenerator[str, None]:
         try:
             async with self.client.stream(
                 "POST",
@@ -115,7 +123,7 @@ class OpenRouterProvider(AIProvider):
                     "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
                     "temperature": kwargs.get("temperature", self.config.temperature),
                     "stream": True,
-                }
+                },
             ) as response:
                 response.raise_for_status()
 
@@ -139,7 +147,9 @@ class OpenRouterProvider(AIProvider):
 class NvidiaProvider(AIProvider):
     """NVIDIA NIM provider implementation"""
 
-    async def generate_completion(self, messages: List[Dict[str, str]], **kwargs) -> str:
+    async def generate_completion(
+        self, messages: list[dict[str, str]], **kwargs
+    ) -> str:
         try:
             response = await self.client.post(
                 f"{self.config.base_url}/chat/completions",
@@ -149,7 +159,7 @@ class NvidiaProvider(AIProvider):
                     "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
                     "temperature": kwargs.get("temperature", self.config.temperature),
                     "stream": False,
-                }
+                },
             )
             response.raise_for_status()
 
@@ -157,9 +167,15 @@ class NvidiaProvider(AIProvider):
             return result["choices"][0]["message"]["content"]
 
         except httpx.HTTPError as e:
-            raise AIProviderError(f"NVIDIA NIM API error: {str(e)}", "nvidia_nim", getattr(e.response, 'status_code', None))
+            raise AIProviderError(
+                f"NVIDIA NIM API error: {str(e)}",
+                "nvidia_nim",
+                getattr(e.response, "status_code", None),
+            )
 
-    async def stream_completion(self, messages: List[Dict[str, str]], **kwargs) -> AsyncGenerator[str, None]:
+    async def stream_completion(
+        self, messages: list[dict[str, str]], **kwargs
+    ) -> AsyncGenerator[str, None]:
         # Implementation similar to OpenRouter
         try:
             async with self.client.stream(
@@ -171,7 +187,7 @@ class NvidiaProvider(AIProvider):
                     "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
                     "temperature": kwargs.get("temperature", self.config.temperature),
                     "stream": True,
-                }
+                },
             ) as response:
                 response.raise_for_status()
 
@@ -195,7 +211,9 @@ class NvidiaProvider(AIProvider):
 class GroqProvider(AIProvider):
     """Groq provider implementation"""
 
-    async def generate_completion(self, messages: List[Dict[str, str]], **kwargs) -> str:
+    async def generate_completion(
+        self, messages: list[dict[str, str]], **kwargs
+    ) -> str:
         try:
             response = await self.client.post(
                 f"{self.config.base_url}/chat/completions",
@@ -204,7 +222,7 @@ class GroqProvider(AIProvider):
                     "messages": self.format_messages(messages),
                     "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
                     "temperature": kwargs.get("temperature", self.config.temperature),
-                }
+                },
             )
             response.raise_for_status()
 
@@ -212,9 +230,15 @@ class GroqProvider(AIProvider):
             return result["choices"][0]["message"]["content"]
 
         except httpx.HTTPError as e:
-            raise AIProviderError(f"Groq API error: {str(e)}", "groq", getattr(e.response, 'status_code', None))
+            raise AIProviderError(
+                f"Groq API error: {str(e)}",
+                "groq",
+                getattr(e.response, "status_code", None),
+            )
 
-    async def stream_completion(self, messages: List[Dict[str, str]], **kwargs) -> AsyncGenerator[str, None]:
+    async def stream_completion(
+        self, messages: list[dict[str, str]], **kwargs
+    ) -> AsyncGenerator[str, None]:
         # Similar streaming implementation
         try:
             async with self.client.stream(
@@ -226,7 +250,7 @@ class GroqProvider(AIProvider):
                     "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
                     "temperature": kwargs.get("temperature", self.config.temperature),
                     "stream": True,
-                }
+                },
             ) as response:
                 response.raise_for_status()
 
@@ -250,30 +274,35 @@ class GroqProvider(AIProvider):
 class GoogleProvider(AIProvider):
     """Google AI provider implementation"""
 
-    def format_messages(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
+    def format_messages(self, messages: list[dict[str, str]]) -> dict[str, Any]:
         """Google AI uses a different message format"""
         contents = []
         for msg in messages:
             role = "user" if msg["role"] == "user" else "model"
-            contents.append({
-                "role": role,
-                "parts": [{"text": msg["content"]}]
-            })
+            contents.append({"role": role, "parts": [{"text": msg["content"]}]})
         return {"contents": contents}
 
-    async def generate_completion(self, messages: List[Dict[str, str]], **kwargs) -> str:
+    async def generate_completion(
+        self, messages: list[dict[str, str]], **kwargs
+    ) -> str:
         try:
             formatted_data = self.format_messages(messages)
-            formatted_data.update({
-                "generationConfig": {
-                    "maxOutputTokens": kwargs.get("max_tokens", self.config.max_tokens),
-                    "temperature": kwargs.get("temperature", self.config.temperature),
+            formatted_data.update(
+                {
+                    "generationConfig": {
+                        "maxOutputTokens": kwargs.get(
+                            "max_tokens", self.config.max_tokens
+                        ),
+                        "temperature": kwargs.get(
+                            "temperature", self.config.temperature
+                        ),
+                    }
                 }
-            })
+            )
 
             response = await self.client.post(
                 f"{self.config.base_url}/models/{self.config.model}:generateContent",
-                json=formatted_data
+                json=formatted_data,
             )
             response.raise_for_status()
 
@@ -281,23 +310,35 @@ class GoogleProvider(AIProvider):
             return result["candidates"][0]["content"]["parts"][0]["text"]
 
         except httpx.HTTPError as e:
-            raise AIProviderError(f"Google AI API error: {str(e)}", "google", getattr(e.response, 'status_code', None))
+            raise AIProviderError(
+                f"Google AI API error: {str(e)}",
+                "google",
+                getattr(e.response, "status_code", None),
+            )
 
-    async def stream_completion(self, messages: List[Dict[str, str]], **kwargs) -> AsyncGenerator[str, None]:
+    async def stream_completion(
+        self, messages: list[dict[str, str]], **kwargs
+    ) -> AsyncGenerator[str, None]:
         # Google AI streaming implementation
         try:
             formatted_data = self.format_messages(messages)
-            formatted_data.update({
-                "generationConfig": {
-                    "maxOutputTokens": kwargs.get("max_tokens", self.config.max_tokens),
-                    "temperature": kwargs.get("temperature", self.config.temperature),
+            formatted_data.update(
+                {
+                    "generationConfig": {
+                        "maxOutputTokens": kwargs.get(
+                            "max_tokens", self.config.max_tokens
+                        ),
+                        "temperature": kwargs.get(
+                            "temperature", self.config.temperature
+                        ),
+                    }
                 }
-            })
+            )
 
             async with self.client.stream(
                 "POST",
                 f"{self.config.base_url}/models/{self.config.model}:streamGenerateContent",
-                json=formatted_data
+                json=formatted_data,
             ) as response:
                 response.raise_for_status()
 
@@ -306,7 +347,10 @@ class GoogleProvider(AIProvider):
                         chunk = json.loads(line)
                         if "candidates" in chunk and chunk["candidates"]:
                             candidate = chunk["candidates"][0]
-                            if "content" in candidate and "parts" in candidate["content"]:
+                            if (
+                                "content" in candidate
+                                and "parts" in candidate["content"]
+                            ):
                                 for part in candidate["content"]["parts"]:
                                     if "text" in part:
                                         yield part["text"]
@@ -320,7 +364,9 @@ class GoogleProvider(AIProvider):
 class OpenAIProvider(AIProvider):
     """OpenAI provider implementation (fallback/reference)"""
 
-    async def generate_completion(self, messages: List[Dict[str, str]], **kwargs) -> str:
+    async def generate_completion(
+        self, messages: list[dict[str, str]], **kwargs
+    ) -> str:
         try:
             response = await self.client.post(
                 f"{self.config.base_url}/chat/completions",
@@ -329,7 +375,7 @@ class OpenAIProvider(AIProvider):
                     "messages": self.format_messages(messages),
                     "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
                     "temperature": kwargs.get("temperature", self.config.temperature),
-                }
+                },
             )
             response.raise_for_status()
 
@@ -337,9 +383,15 @@ class OpenAIProvider(AIProvider):
             return result["choices"][0]["message"]["content"]
 
         except httpx.HTTPError as e:
-            raise AIProviderError(f"OpenAI API error: {str(e)}", "openai", getattr(e.response, 'status_code', None))
+            raise AIProviderError(
+                f"OpenAI API error: {str(e)}",
+                "openai",
+                getattr(e.response, "status_code", None),
+            )
 
-    async def stream_completion(self, messages: List[Dict[str, str]], **kwargs) -> AsyncGenerator[str, None]:
+    async def stream_completion(
+        self, messages: list[dict[str, str]], **kwargs
+    ) -> AsyncGenerator[str, None]:
         # Standard OpenAI streaming implementation
         try:
             async with self.client.stream(
@@ -351,7 +403,7 @@ class OpenAIProvider(AIProvider):
                     "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
                     "temperature": kwargs.get("temperature", self.config.temperature),
                     "stream": True,
-                }
+                },
             ) as response:
                 response.raise_for_status()
 
@@ -375,7 +427,9 @@ class OpenAIProvider(AIProvider):
 class LocalProvider(AIProvider):
     """Local LLM provider (LM Studio, Ollama, etc.)"""
 
-    async def generate_completion(self, messages: List[Dict[str, str]], **kwargs) -> str:
+    async def generate_completion(
+        self, messages: list[dict[str, str]], **kwargs
+    ) -> str:
         try:
             response = await self.client.post(
                 f"{self.config.base_url}/chat/completions",
@@ -384,7 +438,7 @@ class LocalProvider(AIProvider):
                     "messages": self.format_messages(messages),
                     "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
                     "temperature": kwargs.get("temperature", self.config.temperature),
-                }
+                },
             )
             response.raise_for_status()
 
@@ -392,9 +446,15 @@ class LocalProvider(AIProvider):
             return result["choices"][0]["message"]["content"]
 
         except httpx.HTTPError as e:
-            raise AIProviderError(f"Local LLM error: {str(e)}", "local", getattr(e.response, 'status_code', None))
+            raise AIProviderError(
+                f"Local LLM error: {str(e)}",
+                "local",
+                getattr(e.response, "status_code", None),
+            )
 
-    async def stream_completion(self, messages: List[Dict[str, str]], **kwargs) -> AsyncGenerator[str, None]:
+    async def stream_completion(
+        self, messages: list[dict[str, str]], **kwargs
+    ) -> AsyncGenerator[str, None]:
         try:
             async with self.client.stream(
                 "POST",
@@ -405,7 +465,7 @@ class LocalProvider(AIProvider):
                     "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
                     "temperature": kwargs.get("temperature", self.config.temperature),
                     "stream": True,
-                }
+                },
             ) as response:
                 response.raise_for_status()
 
@@ -437,7 +497,7 @@ PROVIDER_MAP = {
 }
 
 
-def create_ai_provider(provider_name: Optional[str] = None) -> AIProvider:
+def create_ai_provider(provider_name: str | None = None) -> AIProvider:
     """Factory function to create AI provider instances"""
     settings = get_ai_settings()
     provider_name = provider_name or settings.ai_provider
@@ -449,7 +509,9 @@ def create_ai_provider(provider_name: Optional[str] = None) -> AIProvider:
     config = get_provider_config(settings, provider_name)
 
     if not validate_provider_config(config):
-        raise AIProviderError(f"Invalid configuration for provider: {provider_name}", provider_name)
+        raise AIProviderError(
+            f"Invalid configuration for provider: {provider_name}", provider_name
+        )
 
     return provider_class(config)
 
@@ -459,9 +521,9 @@ class AIManager:
 
     def __init__(self):
         self.settings = get_ai_settings()
-        self.current_provider: Optional[AIProvider] = None
+        self.current_provider: AIProvider | None = None
 
-    async def get_provider(self, provider_name: Optional[str] = None) -> AIProvider:
+    async def get_provider(self, provider_name: str | None = None) -> AIProvider:
         """Get or create a provider instance"""
         provider_name = provider_name or self.settings.ai_provider
 
@@ -477,33 +539,29 @@ class AIManager:
                             logger.info(f"Trying fallback provider: {fallback}")
                             return create_ai_provider(fallback)
                         except Exception as fallback_error:
-                            logger.warning(f"Fallback provider {fallback} also failed: {fallback_error}")
+                            logger.warning(
+                                f"Fallback provider {fallback} also failed: {fallback_error}"
+                            )
                             continue
 
             raise AIProviderError(f"All AI providers failed. Last error: {e}", "all")
 
     async def generate_completion(
-        self,
-        messages: List[Dict[str, str]],
-        provider: Optional[str] = None,
-        **kwargs
+        self, messages: list[dict[str, str]], provider: str | None = None, **kwargs
     ) -> str:
         """Generate a completion with automatic fallback"""
         async with await self.get_provider(provider) as ai_provider:
             return await ai_provider.generate_completion(messages, **kwargs)
 
     async def stream_completion(
-        self,
-        messages: List[Dict[str, str]],
-        provider: Optional[str] = None,
-        **kwargs
+        self, messages: list[dict[str, str]], provider: str | None = None, **kwargs
     ) -> AsyncGenerator[str, None]:
         """Stream a completion with automatic fallback"""
         async with await self.get_provider(provider) as ai_provider:
             async for chunk in ai_provider.stream_completion(messages, **kwargs):
                 yield chunk
 
-    def get_available_providers(self) -> List[str]:
+    def get_available_providers(self) -> list[str]:
         """Get list of available providers"""
         return get_available_providers(self.settings)
 

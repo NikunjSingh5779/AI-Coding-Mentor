@@ -2,24 +2,28 @@
 Session Controller - API endpoints for managing coding sessions
 Following MVC pattern: Controllers handle request routing and business logic
 """
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from typing import List, Optional
+
 import uuid
 from datetime import datetime
 
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from ..core.database import get_db_session
 from ..models.session import CodingSession, Problem
-from ..views.session_views import SessionResponse, CreateSessionRequest, UpdateSessionRequest
+from ..views.session_views import (
+    CreateSessionRequest,
+    SessionResponse,
+    UpdateSessionRequest,
+)
 
 router = APIRouter()
 
 
 @router.post("/sessions", response_model=SessionResponse)
 async def create_session(
-    request: CreateSessionRequest,
-    db: AsyncSession = Depends(get_db_session)
+    request: CreateSessionRequest, db: AsyncSession = Depends(get_db_session)
 ) -> SessionResponse:
     """Create a new coding session"""
 
@@ -42,7 +46,7 @@ async def create_session(
         hint_level_preference=request.hint_level_preference,
         screen_mode_enabled=request.screen_mode_enabled,
         auto_analysis_enabled=request.auto_analysis_enabled,
-        settings=request.settings
+        settings=request.settings,
     )
 
     db.add(new_session)
@@ -54,14 +58,11 @@ async def create_session(
 
 @router.get("/sessions/{session_token}", response_model=SessionResponse)
 async def get_session(
-    session_token: str,
-    db: AsyncSession = Depends(get_db_session)
+    session_token: str, db: AsyncSession = Depends(get_db_session)
 ) -> SessionResponse:
     """Get session by token"""
 
-    query = select(CodingSession).where(
-        CodingSession.session_token == session_token
-    )
+    query = select(CodingSession).where(CodingSession.session_token == session_token)
     session = await db.scalar(query)
 
     if not session:
@@ -74,13 +75,11 @@ async def get_session(
 async def update_session(
     session_token: str,
     request: UpdateSessionRequest,
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
 ) -> SessionResponse:
     """Update session details"""
 
-    query = select(CodingSession).where(
-        CodingSession.session_token == session_token
-    )
+    query = select(CodingSession).where(CodingSession.session_token == session_token)
     session = await db.scalar(query)
 
     if not session:
@@ -117,8 +116,7 @@ async def update_session(
 
 @router.get("/sessions/{session_token}/analyses")
 async def get_session_analyses(
-    session_token: str,
-    db: AsyncSession = Depends(get_db_session)
+    session_token: str, db: AsyncSession = Depends(get_db_session)
 ):
     """Get all analyses for a session"""
 
@@ -137,14 +135,11 @@ async def get_session_analyses(
 
 @router.delete("/sessions/{session_token}")
 async def delete_session(
-    session_token: str,
-    db: AsyncSession = Depends(get_db_session)
+    session_token: str, db: AsyncSession = Depends(get_db_session)
 ):
     """Delete a session and all related data"""
 
-    query = select(CodingSession).where(
-        CodingSession.session_token == session_token
-    )
+    query = select(CodingSession).where(CodingSession.session_token == session_token)
     session = await db.scalar(query)
 
     if not session:

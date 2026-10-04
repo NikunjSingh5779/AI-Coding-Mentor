@@ -3,7 +3,7 @@ Complete Development Commands and Setup for AI Real-Time Coding Screener
 """
 
 # Development commands for easy project management
-.PHONY: help dev-backend dev-frontend db-up sandbox-build test check clean install-deps
+.PHONY: help dev-backend dev-frontend db-up db-down sandbox-build test check clean install-deps
 
 help: ## Show this help message
 	@echo "AI Real-Time Coding Screener - Development Commands"
@@ -12,23 +12,26 @@ help: ## Show this help message
 
 install-deps: ## Install all dependencies
 	@echo "Installing backend dependencies..."
-	cd backend && pip install -e .
+	cd backend && uv sync
 	@echo "Installing frontend dependencies..."
-	cd frontend && npm install
+	cd frontend && pnpm install
 	@echo "Installing sandbox dependencies..."
-	cd sandbox && pip install -e .
+	cd sandbox && uv sync
 
 dev-backend: ## Start FastAPI development server
 	@echo "Starting AI Real-Time Coding Screener backend..."
-	cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+	cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 dev-frontend: ## Start React development server
 	@echo "Starting AI Real-Time Coding Screener frontend..."
-	cd frontend && npm run dev
+	cd frontend && pnpm dev
 
 db-up: ## Start PostgreSQL database
-	docker-compose up -d db
-	@echo "Database started. Connection: postgresql://postgres:password@localhost:5432/ai_screener"
+	docker compose up -d db
+	@echo "Database started. Connection: postgresql+asyncpg://mentor:password@localhost:5433/mentor"
+
+db-down: ## Stop PostgreSQL database (keeps data volume)
+	docker compose down db
 
 sandbox-build: ## Build Python sandbox Docker image
 	@echo "Building Python sandbox..."

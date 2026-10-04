@@ -8,7 +8,9 @@ services:
       POSTGRES_USER: mentor
       POSTGRES_PASSWORD: password
     ports:
-      - "5432:5432"
+      # Host port 5433: local port 5432 is already used by another Postgres
+      # (ares-postgres). Change here if that service is removed.
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/migrations:/docker-entrypoint-initdb.d

@@ -1,27 +1,11 @@
-"""
-Complete Frontend React Components for AI Real-Time Coding Screener
-"""
 import React, { useState, useEffect } from 'react'
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Toaster } from 'react-hot-toast'
-import { MonacoEditor } from '@monaco-editor/react'
-import { Play, Lightbulb, Settings, History, BarChart3 } from 'lucide-react'
+import Editor from '@monaco-editor/react'
+import { Play, Lightbulb, Settings as SettingsIcon, History, BarChart3 } from 'lucide-react'
+import { create } from 'zustand'
 import './App.css'
 
-// Create a client for React Query
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 1,
-    },
-  },
-})
-
 // Session Store (Zustand)
-import { create } from 'zustand'
-
 interface SessionState {
   currentSession: any | null
   code: string
@@ -120,7 +104,7 @@ const CodeEditor: React.FC = () => {
         </div>
 
         <div className="flex-1">
-          <MonacoEditor
+          <Editor
             height="100%"
             defaultLanguage="python"
             value={code}
@@ -245,7 +229,7 @@ const Navigation: React.FC = () => {
     { icon: Play, label: 'Workspace', path: '/workspace' },
     { icon: History, label: 'History', path: '/history' },
     { icon: BarChart3, label: 'Progress', path: '/progress' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
+    { icon: SettingsIcon, label: 'Settings', path: '/settings' },
   ]
 
   return (
@@ -265,7 +249,7 @@ const Navigation: React.FC = () => {
 }
 
 // Settings Component
-const Settings: React.FC = () => {
+const SettingsPage: React.FC = () => {
   const [providers, setProviders] = useState<any[]>([])
   const [currentProvider, setCurrentProvider] = useState<any>(null)
 
@@ -344,22 +328,19 @@ const Settings: React.FC = () => {
 // Main App Component
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <div className="flex h-screen bg-gray-100">
-        <Navigation />
-        <div className="flex-1">
-          <Routes>
-            <Route path="/" element={<Navigate to="/workspace" replace />} />
-            <Route path="/workspace" element={<CodeEditor />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/history" element={<div className="p-8"><h1 className="text-2xl">History - Coming Soon</h1></div>} />
-            <Route path="/progress" element={<div className="p-8"><h1 className="text-2xl">Progress - Coming Soon</h1></div>} />
-            <Route path="*" element={<Navigate to="/workspace" replace />} />
-          </Routes>
-        </div>
+    <div className="flex h-screen bg-gray-100">
+      <Navigation />
+      <div className="flex-1">
+        <Routes>
+          <Route path="/" element={<Navigate to="/workspace" replace />} />
+          <Route path="/workspace" element={<CodeEditor />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/history" element={<div className="p-8"><h1 className="text-2xl">History - Coming Soon</h1></div>} />
+          <Route path="/progress" element={<div className="p-8"><h1 className="text-2xl">Progress - Coming Soon</h1></div>} />
+          <Route path="*" element={<Navigate to="/workspace" replace />} />
+        </Routes>
       </div>
-      <Toaster position="top-right" />
-    </QueryClientProvider>
+    </div>
   )
 }
 

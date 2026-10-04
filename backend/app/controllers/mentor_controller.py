@@ -2,15 +2,16 @@
 Mentor Controller - API endpoints for AI mentoring and hints
 Following MVC pattern: Controllers handle request routing and business logic
 """
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from typing import List, Optional
+
 import hashlib
 import time
 
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from ..core.database import get_db_session
-from ..models.session import MentorHint, CodingSession, CodeAnalysis
+from ..models.session import CodeAnalysis, CodingSession, MentorHint
 from ..views.session_views import HintResponse
 
 router = APIRouter()
@@ -19,9 +20,9 @@ router = APIRouter()
 @router.post("/hints/request")
 async def request_hint(
     session_token: str,
-    analysis_id: Optional[int] = None,
+    analysis_id: int | None = None,
     hint_level: int = 1,
-    db: AsyncSession = Depends(get_db_session)
+    db: AsyncSession = Depends(get_db_session),
 ):
     """
     Request a hint for a coding issue
@@ -30,8 +31,7 @@ async def request_hint(
 
     # Verify session exists
     session_query = select(CodingSession).where(
-        CodingSession.session_token == session_token,
-        CodingSession.is_active == True
+        CodingSession.session_token == session_token, CodingSession.is_active == True
     )
     session = await db.scalar(session_query)
 
@@ -47,7 +47,9 @@ async def request_hint(
     if analysis_id:
         analysis = await db.get(CodeAnalysis, analysis_id)
         if not analysis or analysis.session_id != session.id:
-            raise HTTPException(status_code=404, detail="Analysis not found for this session")
+            raise HTTPException(
+                status_code=404, detail="Analysis not found for this session"
+            )
 
     # Check if H4 (solution) hint is being requested
     if hint_level == 4:
@@ -70,7 +72,7 @@ async def request_hint(
         select(MentorHint).where(
             MentorHint.session_id == session.id,
             MentorHint.prompt_hash == prompt_hash,
-            MentorHint.hint_level == hint_level
+            MentorHint.hint_level == hint_level,
         )
     )
 
@@ -79,7 +81,7 @@ async def request_hint(
             "cached": True,
             "hint_id": existing_hint.id,
             "hint_text": existing_hint.hint_text,
-            "hint_level": existing_hint.hint_level
+            "hint_level": existing_hint.hint_level,
         }
 
     # Placeholder hint generation
@@ -100,7 +102,7 @@ async def request_hint(
         prompt_hash=prompt_hash,
         generation_time_ms=generation_time_ms,
         safety_approved=True,
-        contains_solution=(hint_level == 4)
+        contains_solution=(hint_level == 4),
     )
 
     db.add(new_hint)
@@ -116,15 +118,14 @@ async def request_hint(
         "hint_id": new_hint.id,
         "hint_text": new_hint.hint_text,
         "hint_level": new_hint.hint_level,
-        "generation_time_ms": generation_time_ms
+        "generation_time_ms": generation_time_ms,
     }
 
 
-@router.get("/hints/{session_token}", response_model=List[HintResponse])
+@router.get("/hints/{session_token}", response_model=list[HintResponse])
 async def get_session_hints(
-    session_token: str,
-    db: AsyncSession = Depends(get_db_session)
-) -> List[HintResponse]:
+    session_token: str, db: AsyncSession = Depends(get_db_session)
+) -> list[HintResponse]:
     """Get all hints for a session"""
 
     # Get session
@@ -137,9 +138,11 @@ async def get_session_hints(
         raise HTTPException(status_code=404, detail="Session not found")
 
     # Get all hints
-    hints_query = select(MentorHint).where(
-        MentorHint.session_id == session.id
-    ).order_by(MentorHint.created_at.desc())
+    hints_query = (
+        select(MentorHint)
+        .where(MentorHint.session_id == session.id)
+        .order_by(MentorHint.created_at.desc())
+    )
 
     result = await db.execute(hints_query)
     hints = result.scalars().all()
@@ -151,8 +154,8 @@ async def get_session_hints(
 async def provide_feedback(
     hint_id: int,
     was_helpful: bool,
-    reaction: Optional[str] = None,
-    db: AsyncSession = Depends(get_db_session)
+    reaction: str | None = None,
+    db: AsyncSession = Depends(get_db_session),
 ):
     """Provide feedback on a hint's helpfulness"""
 
@@ -162,12 +165,18 @@ async def provide_feedback(
         raise HTTPException(status_code=404, detail="Hint not found")
 
     # Valid reactions
-    valid_reactions = ["helpful", "confusing", "incorrect", "too_advanced", "too_simple"]
+    valid_reactions = [
+        "helpful",
+        "confusing",
+        "incorrect",
+        "too_advanced",
+        "too_simple",
+    ]
 
     if reaction and reaction not in valid_reactions:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid reaction. Must be one of: {', '.join(valid_reactions)}"
+            detail=f"Invalid reaction. Must be one of: {', '.join(valid_reactions)}",
         )
 
     # Update hint feedback
@@ -180,10 +189,7 @@ async def provide_feedback(
 
 
 @router.put("/hints/{hint_id}/mark-shown")
-async def mark_hint_shown(
-    hint_id: int,
-    db: AsyncSession = Depends(get_db_session)
-):
+async def mark_hint_shown(hint_id: int, db: AsyncSession = Depends(get_db_session)):
     """Mark a hint as shown to the user (for analytics)"""
 
     hint = await db.get(MentorHint, hint_id)

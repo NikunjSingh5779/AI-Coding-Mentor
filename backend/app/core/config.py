@@ -2,8 +2,9 @@
 Configuration management for AI Real-Time Coding Screener
 Following MVC pattern: Core layer handles application configuration
 """
+
 from functools import lru_cache
-from typing import List
+
 from pydantic_settings import BaseSettings
 
 
@@ -20,7 +21,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://user:pass@localhost/ai_screener"
 
     # CORS
-    cors_origins: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
 
     # LLM Configuration
     llm_provider: str = "local"  # "local" or "hosted"
@@ -49,7 +50,7 @@ class Settings(BaseSettings):
         case_sensitive = False
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """Get cached settings instance"""
     return Settings()

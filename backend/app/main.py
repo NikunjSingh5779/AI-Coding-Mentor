@@ -5,20 +5,19 @@ This is the composition root that wires all modules together and creates
 the FastAPI application with WebSocket support for real-time code analysis.
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.api.health import router as health_router
 from app.config import get_settings
 from app.core.errors import AppError
 from app.core.events import EventBus
-from app.core.logging import setup_logging, get_logger
+from app.core.logging import get_logger, setup_logging
 from app.ws.endpoint import websocket_endpoint
-from app.api.health import router as health_router
-
 
 logger = get_logger(__name__)
 
@@ -34,11 +33,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.event_bus = event_bus
 
     # Log configuration
-    logger.info("Application configured", extra={
-        "debug": settings.debug,
-        "cors_origins": settings.cors_origins,
-        "feature_screen_source": settings.feature_screen_source
-    })
+    logger.info(
+        "Application configured",
+        extra={
+            "debug": settings.debug,
+            "cors_origins": settings.cors_origins,
+            "feature_screen_source": settings.feature_screen_source,
+        },
+    )
 
     yield
 
@@ -59,7 +61,7 @@ def create_app() -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
         docs_url="/docs" if settings.debug else None,
-        redoc_url="/redoc" if settings.debug else None
+        redoc_url="/redoc" if settings.debug else None,
     )
 
     # CORS middleware for frontend communication
@@ -74,24 +76,25 @@ def create_app() -> FastAPI:
     # Exception handlers
     @app.exception_handler(AppError)
     async def app_error_handler(request, exc: AppError):
-        logger.error("Application error", extra={
-            "error_type": type(exc).__name__,
-            "message": str(exc),
-            "path": request.url.path
-        })
+        logger.error(
+            "Application error",
+            extra={
+                "error_type": type(exc).__name__,
+                "message": str(exc),
+                "path": request.url.path,
+            },
+        )
         return JSONResponse(
             status_code=exc.status_code,
-            content={"error": exc.message, "type": exc.error_type}
+            content={"error": exc.message, "type": exc.error_type},
         )
 
     @app.exception_handler(Exception)
     async def general_exception_handler(request, exc: Exception):
-        logger.exception("Unhandled exception", extra={
-            "path": request.url.path
-        })
+        logger.exception("Unhandled exception", extra={"path": request.url.path})
         return JSONResponse(
             status_code=500,
-            content={"error": "Internal server error", "type": "internal_error"}
+            content={"error": "Internal server error", "type": "internal_error"},
         )
 
     # Include routers
@@ -116,5 +119,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=settings.debug,
-        log_config=None  # Use our custom logging setup
+        log_config=None,  # Use our custom logging setup
     )
