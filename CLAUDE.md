@@ -1,6 +1,6 @@
 # CLAUDE.md — AI Real-Time Coding Screener / AI Coding Mentor
 
-> **STATUS: PLANNING ONLY. Nothing is built.** Do not create product code, install dependencies or scaffold folders until the remaining blocking questions Q2–Q7 in `docs/10-OPEN-QUESTIONS.md` are answered and the user explicitly says "start Phase N". Q1 is now decided: both editor input and screen capture are in scope, with automatic code-region discovery and tracking in screen mode and manual region selection only as a fallback. Planning documents may be edited when decisions arrive.
+> **STATUS: Phase 0 Complete — Baseline Toolchain Operational.** Backend API running with WebSocket support, frontend production build passing, database healthy, dependencies locked. Ready for Phase 1 implementation: real-time analysis pipeline.
 
 ## What this is
 

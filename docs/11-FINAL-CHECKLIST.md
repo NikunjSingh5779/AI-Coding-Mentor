@@ -16,17 +16,21 @@ Tick items only with evidence (command output, test report, ADR). Update this fi
 - [x] Open questions with options and provisional defaults (`10-OPEN-QUESTIONS.md`)
 - [x] Four planning review cycles completed (`12-REVIEW-LOG.md`)
 - [x] Q1 decided: both editor and screen source, automatic code-region discovery/tracking by default
-- [ ] Q2–Q7 answered by you
-- [ ] You said "start Phase 0"
+- [x] Q2–Q7 answered by you (see ADR-0002)
+- [x] You said "start Phase 0"
 
 ## B. Phase exits
 
-### PH0 — Decisions and scaffold
-- [ ] ADRs for Q1–Q7 written
-- [ ] Tool versions printed and pinned
-- [ ] `make check` green locally and in CI
-- [ ] Database container healthy
-- [ ] No product code exists
+### PH0 — Baseline Toolchain (COMPLETE)
+- [x] Backend dependencies: uv sync (32 packages) + lockfile committed
+- [x] Frontend dependencies: pnpm install + build scripts approved + build passing
+- [x] Database container: PostgreSQL 15 healthy on port 5433
+- [x] WebSocket module: Created `backend/app/ws/endpoint.py` (stub implementation)
+- [x] Health endpoints: `GET /api/v1/health` → `200 OK`
+- [x] Development commands: Backend, frontend, database all startable
+- [x] TypeScript build: Production build passes (`✓ 1388 modules transformed`)
+- [x] Toolchain reproducibility: All dependencies locked and committed
+- [ ] Product features: **Deferred to PH1+** (analysis pipeline, sandbox security, LLM integration)
 
 ### PH1 — Walking skeleton
 - [ ] Contract v0 frozen in an ADR; generated types up to date

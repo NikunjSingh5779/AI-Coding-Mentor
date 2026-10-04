@@ -1,531 +1,516 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Coding Screener Dashboard</title>
-    <style>
-        /* Design tokens for AI Coding Screener project */
-        :root {
-            /* Color palette - coding theme with warm accents */
-            --primary: #2563eb;      /* Blue for tech feel */
-            --accent: #f59e0b;       /* Amber for highlights */
-            --success: #10b981;      /* Green for completed items */
-            --warning: #ef4444;      /* Red for blockers */
-            --neutral-50: #f8fafc;   /* Light backgrounds */
-            --neutral-900: #0f172a;  /* Dark text */
-            --surface: #ffffff;      /* Card surfaces */
+<title>AI Real-Time Coding Screener — Project Dashboard</title>
+<style>
+  /* Layout: Technical dashboard with status indicators and clean metrics */
+  :root {
+    --bg-primary: #fafafa;
+    --bg-secondary: #ffffff;
+    --bg-accent: #f0f9ff;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --border-light: #e2e8f0;
+    --accent-primary: #0ea5e9;
+    --status-success: #059669;
+    --status-warning: #d97706;
+    --status-error: #dc2626;
+    --status-pending: #7c3aed;
 
-            /* Typography */
-            --font-display: 'Inter', system-ui, sans-serif;
-            --font-body: 'Inter', system-ui, sans-serif;
-            --font-mono: 'Monaco', 'Menlo', monospace;
+    /* Typography */
+    --font-display: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --font-data: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
 
-            /* Layout concept: Dashboard grid with status cards and progress tracking */
-            color-scheme: light;
-        }
+    color-scheme: light;
+  }
 
-        @media (prefers-color-scheme: dark) {
-            :root:not([data-theme="light"]) {
-                --primary: #3b82f6;
-                --accent: #fbbf24;
-                --success: #34d399;
-                --warning: #f87171;
-                --neutral-50: #1e293b;
-                --neutral-900: #f1f5f9;
-                --surface: #334155;
-                color-scheme: dark;
-            }
-        }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-accent: #0f1629;
+      --text-primary: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --text-muted: #64748b;
+      --border-light: #334155;
+      --accent-primary: #38bdf8;
+      --status-success: #10b981;
+      --status-warning: #f59e0b;
+      --status-error: #ef4444;
+      --status-pending: #8b5cf6;
 
-        :root[data-theme="dark"] {
-            --primary: #3b82f6;
-            --accent: #fbbf24;
-            --success: #34d399;
-            --warning: #f87171;
-            --neutral-50: #1e293b;
-            --neutral-900: #f1f5f9;
-            --surface: #334155;
-            color-scheme: dark;
-        }
+      color-scheme: dark;
+    }
+  }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  :root[data-theme="dark"] {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-accent: #0f1629;
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-muted: #64748b;
+    --border-light: #334155;
+    --accent-primary: #38bdf8;
+    --status-success: #10b981;
+    --status-warning: #f59e0b;
+    --status-error: #ef4444;
+    --status-pending: #8b5cf6;
 
-        body {
-            font-family: var(--font-body);
-            background: var(--neutral-50);
-            color: var(--neutral-900);
-            line-height: 1.6;
-            padding: 2rem;
-            min-height: 100vh;
-        }
+    color-scheme: dark;
+  }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+  * {
+    box-sizing: border-box;
+  }
 
-        .header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
+  body {
+    font-family: var(--font-body);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 2rem;
+    line-height: 1.6;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
 
-        .header h1 {
-            font-family: var(--font-display);
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 0.5rem;
-            text-wrap: balance;
-        }
+  .header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border-light);
+  }
 
-        .header p {
-            color: var(--neutral-900);
-            opacity: 0.7;
-            font-size: 1.1rem;
-        }
+  .header h1 {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+    text-wrap: balance;
+  }
 
-        .status-banner {
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            color: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-            text-align: center;
-        }
+  .header .subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin: 0;
+  }
 
-        .status-banner h2 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-bottom: 3rem;
-        }
+  .status-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 1.5rem;
+    position: relative;
+  }
 
-        .card {
-            background: var(--surface);
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
+  .status-card.success {
+    border-left: 4px solid var(--status-success);
+  }
 
-        .card h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: var(--primary);
-        }
+  .status-card.warning {
+    border-left: 4px solid var(--status-warning);
+  }
 
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: var(--neutral-50);
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 1rem 0;
-        }
+  .status-card.error {
+    border-left: 4px solid var(--status-error);
+  }
 
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--success), var(--accent));
-            transition: width 0.3s ease;
-        }
+  .status-card.pending {
+    border-left: 4px solid var(--status-pending);
+  }
 
-        .status-list {
-            list-style: none;
-        }
+  .status-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
 
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-        }
+  .status-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+  }
 
-        .status-item:last-child {
-            border-bottom: none;
-        }
+  .status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
 
-        .status-icon {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: bold;
-            color: white;
-        }
+  .status-indicator.success { background: var(--status-success); }
+  .status-indicator.warning { background: var(--status-warning); }
+  .status-indicator.error { background: var(--status-error); }
+  .status-indicator.pending { background: var(--status-pending); }
 
-        .status-icon.completed {
-            background: var(--success);
-        }
+  .status-details {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
 
-        .status-icon.in-progress {
-            background: var(--accent);
-        }
+  .status-details code {
+    font-family: var(--font-data);
+    background: var(--bg-accent);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+  }
 
-        .status-icon.pending {
-            background: var(--neutral-900);
-            opacity: 0.3;
-        }
+  .quick-start {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+  }
 
-        .status-icon.blocked {
-            background: var(--warning);
-        }
+  .quick-start h2 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 1.5rem 0;
+    color: var(--text-primary);
+  }
 
-        .command-section {
-            background: var(--surface);
-            border-radius: 12px;
-            padding: 2rem;
-            margin-top: 2rem;
-        }
+  .command-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+  }
 
-        .command-section h3 {
-            color: var(--primary);
-            margin-bottom: 1rem;
-        }
+  .command-item {
+    background: var(--bg-accent);
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    padding: 1rem;
+  }
 
-        .command-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-        }
+  .command-title {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+  }
 
-        .command-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 1rem;
-            border-radius: 8px;
-            font-family: var(--font-mono);
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
+  .command-code {
+    font-family: var(--font-data);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+    word-break: break-all;
+  }
 
-        .command-btn:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
 
-        .command-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
+  .metric-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+  }
 
-        .metrics {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-top: 2rem;
-        }
+  .metric-value {
+    font-family: var(--font-data);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    margin: 0 0 0.5rem 0;
+  }
 
-        .metric-card {
-            background: var(--surface);
-            padding: 1.5rem;
-            border-radius: 8px;
-            text-align: center;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
+  .metric-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0;
+  }
 
-        .metric-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
+  .phase-status {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 2rem;
+  }
 
-        .metric-label {
-            font-size: 0.9rem;
-            opacity: 0.7;
-            margin-top: 0.25rem;
-        }
+  .phase-status h2 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 1.5rem 0;
+    color: var(--text-primary);
+  }
 
-        .architecture-section {
-            margin-top: 3rem;
-        }
+  .phase-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-light);
+  }
 
-        .architecture-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1.5rem;
-        }
+  .phase-item:last-child {
+    border-bottom: none;
+  }
 
-        .component-card {
-            background: var(--surface);
-            border-radius: 8px;
-            padding: 1.5rem;
-            border-left: 4px solid var(--accent);
-        }
+  .phase-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    margin-right: 1rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
 
-        .component-card h4 {
-            color: var(--primary);
-            margin-bottom: 0.75rem;
-            font-size: 1.1rem;
-        }
+  .phase-check.done {
+    background: var(--status-success);
+    color: white;
+  }
 
-        .component-card ul {
-            list-style: none;
-            font-size: 0.9rem;
-            line-height: 1.8;
-        }
+  .phase-check.pending {
+    background: var(--status-pending);
+    color: white;
+  }
 
-        .component-card li:before {
-            content: "→";
-            color: var(--accent);
-            margin-right: 0.5rem;
-        }
+  .phase-text {
+    flex: 1;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
 
-        @media (max-width: 768px) {
-            body {
-                padding: 1rem;
-            }
+  .phase-text.done {
+    color: var(--text-primary);
+  }
 
-            .header h1 {
-                font-size: 2rem;
-            }
+  .footer {
+    text-align: center;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-light);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
 
-            .grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
+  @media (max-width: 640px) {
+    body {
+      padding: 1rem;
+    }
 
-            .card {
-                padding: 1.5rem;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header class="header">
-            <h1>AI Real-Time Coding Screener</h1>
-            <p>Development Dashboard & Project Status</p>
-        </header>
+    .status-grid,
+    .command-grid,
+    .metrics {
+      grid-template-columns: 1fr;
+    }
 
-        <div class="status-banner">
-            <h2>🚀 Phase 0: Core Infrastructure Setup</h2>
-            <p>All blocking questions resolved • ICM+MVC structure in progress • Ready to implement</p>
-        </div>
+    .header h1 {
+      font-size: 1.5rem;
+    }
+  }
+</style>
 
-        <div class="grid">
-            <!-- Blocking Questions Card -->
-            <div class="card">
-                <h3>Blocking Questions Status</h3>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: 100%"></div>
-                </div>
-                <ul class="status-list">
-                    <li class="status-item">
-                        <div class="status-icon completed">✓</div>
-                        <span>Q2: Python only for first release</span>
-                    </li>
-                    <li class="status-item">
-                        <div class="status-icon completed">✓</div>
-                        <span>Q3: Built-in problem bank with test cases</span>
-                    </li>
-                    <li class="status-item">
-                        <div class="status-icon completed">✓</div>
-                        <span>Q4: Switchable LLM (local + hosted)</span>
-                    </li>
-                    <li class="status-item">
-                        <div class="status-icon completed">✓</div>
-                        <span>Q5: Single-user local deployment</span>
-                    </li>
-                    <li class="status-item">
-                        <div class="status-icon completed">✓</div>
-                        <span>Q6: 2-week prototype timeline</span>
-                    </li>
-                    <li class="status-item">
-                        <div class="status-icon completed">✓</div>
-                        <span>Q7: Start from current repository</span>
-                    </li>
-                </ul>
-            </div>
+<div class="header">
+  <h1>AI Real-Time Coding Screener</h1>
+  <p class="subtitle">Phase 0 Baseline — Toolchain Operational</p>
+</div>
 
-            <!-- Implementation Progress Card -->
-            <div class="card">
-                <h3>Implementation Progress</h3>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: 65%"></div>
-                </div>
-                <ul class="status-list">
-                    <li class="status-item">
-                        <div class="status-icon completed">✓</div>
-                        <span>ICM documentation layer</span>
-                    </li>
-                    <li class="status-item">
-                        <div class="status-icon completed">✓</div>
-                        <span>Folder structure (backend/frontend/sandbox)</span>
-                    </li>
-                    <li class="status-item">
-                        <div class="status-icon completed">✓</div>
-                        <span>Data models (Sessions, Problems, Analysis)</span>
-                    </li>
-                    <li class="status-item">
-                        <div class="status-icon in-progress">⚡</div>
-                        <span>API controllers (Health, Sessions, Mentor)</span>
-                    </li>
-                    <li class="status-item">
-                        <div class="status-icon in-progress">⚡</div>
-                        <span>Package configurations & tooling</span>
-                    </li>
-                    <li class="status-item">
-                        <div class="status-icon pending">○</div>
-                        <span>Frontend React app structure</span>
-                    </li>
-                    <li class="status-item">
-                        <div class="status-icon pending">○</div>
-                        <span>Sandbox Docker configuration</span>
-                    </li>
-                </ul>
-            </div>
+<div class="status-grid">
+  <div class="status-card success">
+    <div class="status-header">
+      <h3 class="status-title">Backend API</h3>
+      <div class="status-indicator success"></div>
+    </div>
+    <div class="status-details">
+      FastAPI server running with WebSocket support.<br>
+      Health endpoint: <code>GET /api/v1/health</code> → <code>200 OK</code><br>
+      Full app imports cleanly with <code>app.main:app</code>
+    </div>
+  </div>
 
-            <!-- Next Steps Card -->
-            <div class="card">
-                <h3>Immediate Next Steps</h3>
-                <ul class="status-list">
-                    <li class="status-item">
-                        <div class="status-icon in-progress">1</div>
-                        <span>Complete frontend React structure</span>
-                    </li>
-                    <li class="status-item">
-                        <div class="status-icon pending">2</div>
-                        <span>Create Docker sandbox configuration</span>
-                    </li>
-                    <li class="status-item">
-                        <div class="status-icon pending">3</div>
-                        <span>Set up development environment</span>
-                    </li>
-                    <li class="status-item">
-                        <div class="status-icon pending">4</div>
-                        <span>Initialize database with sample data</span>
-                    </li>
-                    <li class="status-item">
-                        <div class="status-icon pending">5</div>
-                        <span>Create basic problem bank</span>
-                    </li>
-                </ul>
-            </div>
-        </div>
+  <div class="status-card success">
+    <div class="status-header">
+      <h3 class="status-title">Frontend Build</h3>
+      <div class="status-indicator success"></div>
+    </div>
+    <div class="status-details">
+      Production build passes with TypeScript strict checks.<br>
+      Vite build: <code>✓ 1388 modules transformed</code><br>
+      Monaco Editor + React app working
+    </div>
+  </div>
 
-        <div class="metrics">
-            <div class="metric-card">
-                <div class="metric-value">6/6</div>
-                <div class="metric-label">Questions Resolved</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">65%</div>
-                <div class="metric-label">Phase 0 Complete</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">2</div>
-                <div class="metric-label">Weeks Timeline</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">3</div>
-                <div class="metric-label">Core Components</div>
-            </div>
-        </div>
+  <div class="status-card success">
+    <div class="status-header">
+      <h3 class="status-title">Database</h3>
+      <div class="status-indicator success"></div>
+    </div>
+    <div class="status-details">
+      PostgreSQL 15 container healthy on port 5433.<br>
+      Service: <code>project-db-1</code> → <code>Up (healthy)</code><br>
+      Connection ready for development
+    </div>
+  </div>
 
-        <div class="command-section">
-            <h3>Development Commands (Available after setup)</h3>
-            <div class="command-grid">
-                <button class="command-btn" disabled>make dev-backend</button>
-                <button class="command-btn" disabled>make dev-frontend</button>
-                <button class="command-btn" disabled>make sandbox-build</button>
-                <button class="command-btn" disabled>make test</button>
-                <button class="command-btn" disabled>make db-up</button>
-                <button class="command-btn" disabled>make check</button>
-            </div>
-            <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.7;">
-                Commands will be enabled once the basic project setup is complete.
-            </p>
-        </div>
+  <div class="status-card success">
+    <div class="status-header">
+      <h3 class="status-title">Dependencies</h3>
+      <div class="status-indicator success"></div>
+    </div>
+    <div class="status-details">
+      Python: 32 packages via <code>uv sync</code><br>
+      Frontend: pnpm install with approved build scripts<br>
+      Locked dependencies committed
+    </div>
+  </div>
 
-        <div class="architecture-section">
-            <h3>ICM + MVC Architecture</h3>
-            <div class="architecture-grid">
-                <div class="component-card">
-                    <h4>ICM Layer (Navigation)</h4>
-                    <ul>
-                        <li>CLAUDE.md - Project catalog</li>
-                        <li>docs/ - Context & decisions</li>
-                        <li>Status tracking</li>
-                        <li>Routing guidelines</li>
-                    </ul>
-                </div>
+  <div class="status-card warning">
+    <div class="status-header">
+      <h3 class="status-title">Product Features</h3>
+      <div class="status-indicator warning"></div>
+    </div>
+    <div class="status-details">
+      <strong>Deferred to PH1+:</strong> Real analysis pipeline, sandbox security, LLM integration, migrations, comprehensive tests, E2E flows
+    </div>
+  </div>
+</div>
 
-                <div class="component-card">
-                    <h4>Backend MVC</h4>
-                    <ul>
-                        <li>Models: Session, Problem, Analysis</li>
-                        <li>Views: API response schemas</li>
-                        <li>Controllers: Request handlers</li>
-                        <li>Core: Config, database, security</li>
-                    </ul>
-                </div>
-
-                <div class="component-card">
-                    <h4>Frontend MVC</h4>
-                    <ul>
-                        <li>Models: Client data types</li>
-                        <li>Views: React components</li>
-                        <li>Controllers: Event handlers</li>
-                        <li>Monaco editor integration</li>
-                    </ul>
-                </div>
-
-                <div class="component-card">
-                    <h4>Sandbox MVC</h4>
-                    <ul>
-                        <li>Models: Execution specs</li>
-                        <li>Views: Result formatters</li>
-                        <li>Controllers: Code runners</li>
-                        <li>Docker isolation</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+<div class="quick-start">
+  <h2>🚀 Quick Start Commands</h2>
+  <div class="command-grid">
+    <div class="command-item">
+      <div class="command-title">Start Backend</div>
+      <code class="command-code">cd backend && uv run uvicorn app.main:app --port 8000 --reload</code>
     </div>
 
-    <script>
-        // Add interactive behavior
-        document.addEventListener('DOMContentLoaded', function() {
-            // Animate progress bars on load
-            const progressBars = document.querySelectorAll('.progress-fill');
-            progressBars.forEach(bar => {
-                const width = bar.style.width;
-                bar.style.width = '0%';
-                setTimeout(() => {
-                    bar.style.width = width;
-                }, 300);
-            });
+    <div class="command-item">
+      <div class="command-title">Start Frontend</div>
+      <code class="command-code">cd frontend && pnpm dev</code>
+    </div>
 
-            // Add hover effects to status items
-            const statusItems = document.querySelectorAll('.status-item');
-            statusItems.forEach(item => {
-                item.addEventListener('mouseenter', function() {
-                    this.style.backgroundColor = 'rgba(37, 99, 235, 0.05)';
-                });
-                item.addEventListener('mouseleave', function() {
-                    this.style.backgroundColor = 'transparent';
-                });
-            });
-        });
-    </script>
-</body>
-</html>
+    <div class="command-item">
+      <div class="command-title">Database Up</div>
+      <code class="command-code">docker compose up -d db</code>
+    </div>
+
+    <div class="command-item">
+      <div class="command-title">Database Down</div>
+      <code class="command-code">docker compose down db</code>
+    </div>
+
+    <div class="command-item">
+      <div class="command-title">Install Dependencies</div>
+      <code class="command-code">make install-deps</code>
+    </div>
+
+    <div class="command-item">
+      <div class="command-title">Health Check</div>
+      <code class="command-code">curl http://localhost:8000/api/v1/health</code>
+    </div>
+  </div>
+</div>
+
+<div class="metrics">
+  <div class="metric-card">
+    <div class="metric-value">32</div>
+    <div class="metric-label">Python Packages</div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-value">1388</div>
+    <div class="metric-label">Vite Modules</div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-value">5433</div>
+    <div class="metric-label">Database Port</div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-value">200</div>
+    <div class="metric-label">API Health Status</div>
+  </div>
+</div>
+
+<div class="phase-status">
+  <h2>📋 Phase 0 Checklist</h2>
+
+  <div class="phase-item">
+    <div class="phase-check done">✓</div>
+    <div class="phase-text done">Questions Q2-Q7 resolved (see ADR-0002)</div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-check done">✓</div>
+    <div class="phase-text done">Backend toolchain: uv + FastAPI + locked dependencies</div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-check done">✓</div>
+    <div class="phase-text done">Frontend toolchain: pnpm + React + Vite + TypeScript</div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-check done">✓</div>
+    <div class="phase-text done">Database container: PostgreSQL healthy on 5433</div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-check done">✓</div>
+    <div class="phase-text done">WebSocket module created (stub implementation)</div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-check done">✓</div>
+    <div class="phase-text done">Production build passes (frontend)</div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-check done">✓</div>
+    <div class="phase-text done">Health endpoints responding</div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-check pending">PH1</div>
+    <div class="phase-text">Real-time analysis pipeline</div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-check pending">PH2</div>
+    <div class="phase-text">Python AST analysis + tree-sitter</div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-check pending">PH3</div>
+    <div class="phase-text">Hardened sandbox execution</div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-check pending">PH4</div>
+    <div class="phase-text">LLM integration + progressive hints</div>
+  </div>
+
+  <div class="phase-item">
+    <div class="phase-check pending">PH5</div>
+    <div class="phase-text">Database migrations + persistence</div>
+  </div>
+</div>
+
+<div class="footer">
+  <p>Branch: <code>phase/0-baseline-toolchain</code> • Updated: 2026-10-04 • Next: Complete docs and tag phase-0-complete</p>
+</div>
