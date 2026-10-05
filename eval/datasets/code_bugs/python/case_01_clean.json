@@ -1,0 +1,7 @@
+{
+  "id": "case_01_clean",
+  "language": "python",
+  "is_clean": true,
+  "expected_categories": [],
+  "description": "Clean simple function with type annotations"
+}

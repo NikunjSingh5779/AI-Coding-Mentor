@@ -1,0 +1,7 @@
+{
+  "id": "case_03_undefined_name",
+  "language": "python",
+  "is_clean": false,
+  "expected_categories": ["NAME_UNDEFINED"],
+  "description": "Reference to undefined variable"
+}

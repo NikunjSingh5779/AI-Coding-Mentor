@@ -1,0 +1,7 @@
+{
+  "id": "case_02_missing_colon",
+  "language": "python",
+  "is_clean": false,
+  "expected_categories": ["SYNTAX_MISSING_TOKEN", "SYNTAX_UNEXPECTED_TOKEN"],
+  "description": "Function definition missing closing colon"
+}

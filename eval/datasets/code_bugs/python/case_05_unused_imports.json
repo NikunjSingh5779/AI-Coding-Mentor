@@ -1,0 +1,7 @@
+{
+  "id": "case_05_unused_imports",
+  "language": "python",
+  "is_clean": false,
+  "expected_categories": ["QUALITY_UNUSED"],
+  "description": "Imports declared but never used in function"
+}

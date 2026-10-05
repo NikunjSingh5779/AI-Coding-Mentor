@@ -1,0 +1,7 @@
+{
+  "id": "case_04_indentation",
+  "language": "python",
+  "is_clean": false,
+  "expected_categories": ["SYNTAX_INDENTATION", "SYNTAX_UNEXPECTED_TOKEN"],
+  "description": "Expected indented block after if statement"
+}

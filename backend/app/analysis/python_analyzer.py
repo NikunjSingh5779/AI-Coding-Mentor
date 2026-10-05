@@ -257,6 +257,17 @@ class PythonAnalyzer:
             if isinstance(node, ast.FunctionDef):
                 self.context.function_names.add(node.name)
                 self.context.defined_names.add(node.name)
+                # Also collect function parameters
+                for arg in node.args.args:
+                    self.context.defined_names.add(arg.arg)
+                for arg in node.args.posonlyargs:
+                    self.context.defined_names.add(arg.arg)
+                for arg in node.args.kwonlyargs:
+                    self.context.defined_names.add(arg.arg)
+                if node.args.vararg:
+                    self.context.defined_names.add(node.args.vararg.arg)
+                if node.args.kwarg:
+                    self.context.defined_names.add(node.args.kwarg.arg)
             elif isinstance(node, ast.ClassDef):
                 self.context.class_names.add(node.name)
                 self.context.defined_names.add(node.name)

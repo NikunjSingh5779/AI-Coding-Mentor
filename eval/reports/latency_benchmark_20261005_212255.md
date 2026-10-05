@@ -1,0 +1,15 @@
+# Evaluation Report: LATENCY_BENCHMARK
+**Date:** 2026-10-05T21:22:55.266906
+
+## Summary
+- **benchmark:** fast_static_analysis_latency
+- **sample_count:** 105
+### percentiles_ms
+- **p50:** 29.32
+- **p90:** 30.52
+- **p95:** 31.03
+- **p99:** 32.94
+- **mean:** 29.45
+- **max:** 33.28
+- **target_p95_ms:** 1000.0
+- **p95_pass:** True
