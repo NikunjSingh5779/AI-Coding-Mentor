@@ -35,6 +35,15 @@
     "allowUnusedLabels": false,
     "allowUnreachableCode": false
   },
-  "include": ["src/main.tsx", "src/App.tsx"],
-  "exclude": ["node_modules", "dist", "build"]
+  "include": [
+    "src/vite-env.d.ts",
+    "src/main.tsx",
+    "src/App.tsx",
+    "src/components/**/*",
+    "src/features/**/*",
+    "src/services/**/*",
+    "src/stores/**/*",
+    "src/types/**/*"
+  ],
+  "exclude": ["node_modules", "dist", "build", "src/test", "src/routes", "src/controllers"]
 }

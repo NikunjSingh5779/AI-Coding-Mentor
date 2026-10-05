@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.api.health import router as health_router
+from app.api.problems import router as problems_router
 from app.config import get_settings
 from app.core.errors import AppError
 from app.core.events import EventBus
@@ -99,6 +100,7 @@ def create_app() -> FastAPI:
 
     # Include routers
     app.include_router(health_router, prefix="/api/v1", tags=["health"])
+    app.include_router(problems_router, prefix="/api/v1", tags=["problems", "execution"])
 
     # WebSocket endpoint for real-time code analysis
     @app.websocket("/ws/code-analysis")

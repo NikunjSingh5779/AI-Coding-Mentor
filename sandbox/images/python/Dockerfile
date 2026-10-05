@@ -1,51 +1,28 @@
-# Sandbox Python Environment
+# Hardened Python Sandbox Runtime for AI Coding Mentor
 FROM python:3.11-slim
 
-# Set environment variables
+# Prevent bytecode generation and configure unbuffered output
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    DEBIAN_FRONTEND=noninteractive
 
-# Create non-root user for security
-RUN groupadd -r sandbox && useradd -r -g sandbox sandbox
+# Create non-root group and user with fixed UID/GID 1000:1000
+RUN groupadd -g 1000 sandbox && \
+    useradd -u 1000 -g sandbox -m -s /bin/sh sandbox
 
-# Install minimal system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libc6-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Remove network utilities and unnecessary binaries
+RUN apt-get update && \
+    apt-get purge -y --auto-remove wget curl perl 2>/dev/null || true && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install uv for fast dependency management
-RUN pip install uv
+# Create working directory and set permissions
+RUN mkdir -p /work && \
+    chown -R sandbox:sandbox /work && \
+    chmod 755 /work
 
-# Set working directory
-WORKDIR /sandbox
+WORKDIR /work
+USER sandbox:sandbox
 
-# Copy and install Python dependencies
-COPY pyproject.toml ./
-RUN uv sync --no-dev
-
-# Create secure directories with proper permissions
-RUN mkdir -p /sandbox/code /sandbox/output && \
-    chown -R sandbox:sandbox /sandbox && \
-    chmod 755 /sandbox/code /sandbox/output
-
-# Remove network utilities and package managers for security
-RUN apt-get remove -y wget curl && \
-    apt-get autoremove -y && \
-    apt-get clean
-
-# Switch to non-root user
-USER sandbox
-
-# Resource limits (overridden by Docker run)
-# Memory: 256MB, CPU: 0.5 cores, Processes: 32, No network
-# Time limits enforced by the runner service
-
-# Default command (overridden by runner)
-CMD ["python", "-c", "print('Sandbox ready')"]
-
-# Security: No privileged operations, no network access
-# Mounted read-only except for /sandbox/output
-# All code execution happens through the runner service
+# Default command
+CMD ["python3", "-c", "print('Sandbox Ready')"]

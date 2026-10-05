@@ -1,0 +1,33 @@
+{
+  "id": "reverse-words",
+  "title": "Reverse Words in a String",
+  "difficulty": "medium",
+  "category": "strings",
+  "tags": ["strings", "two-pointers"],
+  "description": "# Reverse Words in a String\n\nGiven an input string `s`, reverse the order of the words.\nA word is defined as a sequence of non-space characters. The words in `s` will be separated by at least one space.\n\n### Input Format\n- A single string line.\n\n### Output Format\n- The string of words in reverse order concatenated by a single space.",
+  "starter_code": "def reverse_words(s: str) -> str:\n    words = s.strip().split()\n    return ' '.join(reversed(words))\n\ndef main():\n    s = input()\n    print(reverse_words(s))\n\nif __name__ == '__main__':\n    main()\n",
+  "timeout_seconds": 5.0,
+  "test_cases": [
+    {
+      "id": "tc_1",
+      "stdin": "the sky is blue\n",
+      "expected_output": "blue is sky the\n",
+      "is_hidden": false,
+      "description": "Standard space separated words"
+    },
+    {
+      "id": "tc_2",
+      "stdin": "  hello world  \n",
+      "expected_output": "world hello\n",
+      "is_hidden": false,
+      "description": "Leading and trailing spaces"
+    },
+    {
+      "id": "tc_3",
+      "stdin": "a good   example\n",
+      "expected_output": "example good a\n",
+      "is_hidden": true,
+      "description": "Multiple multiple consecutive spaces"
+    }
+  ]
+}

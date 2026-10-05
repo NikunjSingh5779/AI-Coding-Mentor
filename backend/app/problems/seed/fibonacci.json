@@ -1,0 +1,40 @@
+{
+  "id": "fibonacci",
+  "title": "N-th Fibonacci Number",
+  "difficulty": "easy",
+  "category": "recursion",
+  "tags": ["math", "dp", "recursion"],
+  "description": "# N-th Fibonacci Number\n\nCalculate the n-th Fibonacci number where $F(0) = 0, F(1) = 1$, and $F(n) = F(n-1) + F(n-2)$ for $n \\ge 2$.\n\n### Input Format\n- An integer $n$ ($0 \\le n \\le 30$).\n\n### Output Format\n- The $n$-th Fibonacci integer.\n\n### Example\n**Input:**\n```\n7\n```\n**Output:**\n```\n13\n```",
+  "starter_code": "def fibonacci(n):\n    if n <= 0:\n        return 0\n    if n == 1:\n        return 1\n    a, b = 0, 1\n    for _ in range(2, n + 1):\n        a, b = b, a + b\n    return b\n\ndef main():\n    n = int(input().strip())\n    print(fibonacci(n))\n\nif __name__ == '__main__':\n    main()\n",
+  "timeout_seconds": 5.0,
+  "test_cases": [
+    {
+      "id": "tc_1",
+      "stdin": "0\n",
+      "expected_output": "0\n",
+      "is_hidden": false,
+      "description": "Base case zero"
+    },
+    {
+      "id": "tc_2",
+      "stdin": "1\n",
+      "expected_output": "1\n",
+      "is_hidden": false,
+      "description": "Base case one"
+    },
+    {
+      "id": "tc_3",
+      "stdin": "7\n",
+      "expected_output": "13\n",
+      "is_hidden": false,
+      "description": "Small integer 7"
+    },
+    {
+      "id": "tc_4",
+      "stdin": "20\n",
+      "expected_output": "6765\n",
+      "is_hidden": true,
+      "description": "Medium integer 20"
+    }
+  ]
+}

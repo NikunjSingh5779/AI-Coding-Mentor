@@ -1,0 +1,40 @@
+{
+  "id": "two-sum",
+  "title": "Two Sum",
+  "difficulty": "easy",
+  "category": "arrays",
+  "tags": ["arrays", "hash-table", "search"],
+  "description": "# Two Sum\n\nGiven a list of integers and a target sum, find two distinct indices whose elements sum to the target.\n\n### Input Format\n- Line 1: Space-separated integers representing the array.\n- Line 2: An integer target.\n\n### Output Format\n- Print the two 0-based indices separated by a space (sorted ascending).\n\n### Example\n**Input:**\n```\n2 7 11 15\n9\n```\n**Output:**\n```\n0 1\n```",
+  "starter_code": "def two_sum(nums, target):\n    # TODO: implement two sum\n    seen = {}\n    for i, num in enumerate(nums):\n        diff = target - num\n        if diff in seen:\n            return [seen[diff], i]\n        seen[num] = i\n    return []\n\ndef main():\n    nums = list(map(int, input().split()))\n    target = int(input().strip())\n    result = two_sum(nums, target)\n    print(f\"{result[0]} {result[1]}\")\n\nif __name__ == '__main__':\n    main()\n",
+  "timeout_seconds": 5.0,
+  "test_cases": [
+    {
+      "id": "tc_1",
+      "stdin": "2 7 11 15\n9\n",
+      "expected_output": "0 1\n",
+      "is_hidden": false,
+      "description": "Basic positive numbers"
+    },
+    {
+      "id": "tc_2",
+      "stdin": "3 2 4\n6\n",
+      "expected_output": "1 2\n",
+      "is_hidden": false,
+      "description": "Indices in middle"
+    },
+    {
+      "id": "tc_3",
+      "stdin": "3 3\n6\n",
+      "expected_output": "0 1\n",
+      "is_hidden": true,
+      "description": "Duplicate values"
+    },
+    {
+      "id": "tc_4",
+      "stdin": "-1 -2 -3 -4 -5\n-8\n",
+      "expected_output": "2 4\n",
+      "is_hidden": true,
+      "description": "Negative numbers"
+    }
+  ]
+}

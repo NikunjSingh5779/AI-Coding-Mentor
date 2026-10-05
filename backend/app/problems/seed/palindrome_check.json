@@ -1,0 +1,40 @@
+{
+  "id": "valid-palindrome",
+  "title": "Valid Palindrome",
+  "difficulty": "easy",
+  "category": "strings",
+  "tags": ["strings", "two-pointers"],
+  "description": "# Valid Palindrome\n\nA phrase is a palindrome if, after converting all uppercase letters into lowercase letters and removing all non-alphanumeric characters, it reads the same forward and backward.\n\n### Input Format\n- A single string on one line.\n\n### Output Format\n- Print `true` if it is a palindrome, otherwise `false` (in lowercase).\n\n### Example\n**Input:**\n```\nA man, a plan, a canal: Panama\n```\n**Output:**\n```\ntrue\n```",
+  "starter_code": "def is_palindrome(s: str) -> bool:\n    cleaned = [c.lower() for c in s if c.isalnum()]\n    return cleaned == cleaned[::-1]\n\ndef main():\n    s = input()\n    print(\"true\" if is_palindrome(s) else \"false\")\n\nif __name__ == '__main__':\n    main()\n",
+  "timeout_seconds": 5.0,
+  "test_cases": [
+    {
+      "id": "tc_1",
+      "stdin": "A man, a plan, a canal: Panama\n",
+      "expected_output": "true\n",
+      "is_hidden": false,
+      "description": "Standard sentence palindrome"
+    },
+    {
+      "id": "tc_2",
+      "stdin": "race a car\n",
+      "expected_output": "false\n",
+      "is_hidden": false,
+      "description": "Non-palindrome"
+    },
+    {
+      "id": "tc_3",
+      "stdin": " \n",
+      "expected_output": "true\n",
+      "is_hidden": true,
+      "description": "Empty string after cleaning"
+    },
+    {
+      "id": "tc_4",
+      "stdin": "0P\n",
+      "expected_output": "false\n",
+      "is_hidden": true,
+      "description": "Alphanumeric mismatch"
+    }
+  ]
+}

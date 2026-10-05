@@ -1,0 +1,26 @@
+{
+  "id": "fizz-buzz",
+  "title": "FizzBuzz",
+  "difficulty": "easy",
+  "category": "logic",
+  "tags": ["math", "conditionals"],
+  "description": "# FizzBuzz\n\nGiven an integer $n$, print the numbers from 1 to $n$ each on a new line.\n- For multiples of 3, print `Fizz` instead of the number.\n- For multiples of 5, print `Buzz` instead of the number.\n- For numbers which are multiples of both 3 and 5, print `FizzBuzz`.\n\n### Input Format\n- An integer $n$.\n\n### Output Format\n- $n$ lines representing the FizzBuzz sequence.",
+  "starter_code": "def fizz_buzz(n):\n    for i in range(1, n + 1):\n        if i % 15 == 0:\n            print(\"FizzBuzz\")\n        elif i % 3 == 0:\n            print(\"Fizz\")\n        elif i % 5 == 0:\n            print(\"Buzz\")\n        else:\n            print(i)\n\ndef main():\n    n = int(input().strip())\n    fizz_buzz(n)\n\nif __name__ == '__main__':\n    main()\n",
+  "timeout_seconds": 5.0,
+  "test_cases": [
+    {
+      "id": "tc_1",
+      "stdin": "5\n",
+      "expected_output": "1\n2\nFizz\n4\nBuzz\n",
+      "is_hidden": false,
+      "description": "First 5 numbers"
+    },
+    {
+      "id": "tc_2",
+      "stdin": "15\n",
+      "expected_output": "1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n",
+      "is_hidden": true,
+      "description": "15 numbers including multiple of 15"
+    }
+  ]
+}

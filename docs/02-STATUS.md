@@ -1,8 +1,8 @@
 # 02 — Project Status
 
-**Current Status:** Phase 2 Complete ✅ — Ready for Phase 3  
+**Current Status:** Phase 3 Complete ✅ — Ready for Phase 4  
 **Last Updated:** 2026-10-05  
-**Branch:** `phase/2-fast-static-analysis`
+**Branch:** `phase/3-sandbox-execution`
 
 ## ✅ Phase 0 Achievements
 
@@ -24,35 +24,52 @@
 
 **Fast Static Analysis Pipeline**
 - **Taxonomy Mapping (`backend/app/analysis/taxonomy.py`)**
-  - Mapped 23 fine-grained mistake categories across 8 groups (syntax, name, type, runtime, logic, quality, performance, environment)
-  - Tool-agnostic rule code translation (Ruff, Pyflakes, pycodestyle)
+  - Mapped 23 fine-grained mistake categories across 8 groups
 - **Diagnostics Aggregator (`backend/app/analysis/aggregator.py`)**
   - Content-aware stable hashing and deduplication per line/token
-  - Severity-based ranking and conflict resolution
 - **Tree-sitter Parser & Error Extraction (`backend/app/analysis/treesitter/`)**
   - Error-tolerant AST parsing with grammar registry
-  - Precise ERROR and MISSING node diagnostic extraction
 - **Standard Library AST Parser (`backend/app/analysis/python_ast.py`)**
   - Safe syntax checking without code execution
-  - Pathological input size limits and error localization
 - **Ruff Linter Subprocess Wrapper (`backend/app/analysis/linters/ruff_python.py`)**
   - Stdin streaming and JSON output parsing
-  - Subprocess timeout containment (2.0s max)
-- **Fast-Path Pipeline Orchestrator (`backend/app/analysis/pipeline.py`)**
-  - Asynchronous parallel execution across thread pools
-  - Stage-level timing breakdown (<50ms typical runtime)
 - **Evaluation Suite (`eval/`)**
   - Labeled dataset of clean and buggy snippets (`eval/datasets/code_bugs/`)
-  - Accuracy and precision/recall evaluation harness (`eval/harness/run_eval.py` -> 100% precision & recall)
-  - Latency and throughput benchmark (`eval/harness/bench_latency.py` -> P95 ~31ms)
+  - 100% precision & recall on benchmark suite; latency P95 ~31ms
+
+## ✅ Phase 3 Achievements
+
+**Sandbox and Execution Pipeline**
+- **Threat Model & Isolation Policy (`sandbox/README.md`, `docs/adr/0006-sandbox-isolation-and-execution.md`)**
+  - Hardened container execution policy (P-08/P-09): non-root (`sandbox:sandbox`, UID 1000), read-only rootfs, in-memory tmpfs `/work`, network disabled (`--network none`), all capabilities dropped (`ALL`), `no-new-privileges:true`, PID limit 64, memory cap 256MB, CPU quota 1.0 core, 64 KB output cap.
+- **Python Sandbox Docker Image (`sandbox/images/python/Dockerfile`)**
+  - Minimal non-root Python 3.11 image stripped of network utilities.
+- **Sandbox Runner Service (`sandbox/runner/app.py`, `policy.py`, `languages.py`)**
+  - Asynchronous FastAPI runner on port 8100 behind shared-secret authentication (`SANDBOX_SECRET`).
+  - Strict concurrency limiter (`max_concurrent_jobs = 2`) returning `429 / runner_busy`.
+  - Base64 tmpfs code injection and in-container process orchestration.
+- **Isolation & Limit Verification (`sandbox/tests/`)**
+  - 9/9 automated isolation and limit tests passing (non-root UID, blocked sockets, read-only rootfs, no Docker socket, infinite loop timeout, memory bomb containment, output truncation, stdin piping, test suite execution).
+- **Backend Execution Engine (`backend/app/execution/`)**
+  - `SandboxClient`: HTTP client with circuit breaker, timeout management, and `EXECUTION_ENABLED` kill switch.
+  - `result_parser.py`: Maps runtime tracebacks and exit codes to taxonomy categories (e.g. `RUNTIME_ZERO_DIVISION`, `RUNTIME_INDEX`, `RUNTIME_TIMEOUT`, `RUNTIME_MEMORY`).
+  - `test_runner.py`: Executes automated test suites while strictly redacting hidden test inputs and expected outputs (Q3 information hiding).
+- **Problem Bank & Seed Challenges (`backend/app/problems/`, `backend/app/api/problems.py`)**
+  - Seed challenges: Two Sum, Fibonacci, Valid Palindrome, FizzBuzz, Valid Parentheses, Reverse Words.
+  - Public problem endpoints and submission execution.
+- **Frontend Execution UI (`frontend/src/features/`)**
+  - `ProblemPanel.tsx`: Interactive challenge browser with difficulty badges and sample cases.
+  - `RunPanel.tsx`: Tabbed execution console for single runs, custom stdin, and automated test suite evaluation.
+  - `TestResults.tsx`: Test case pass/fail summary and execution timings.
 
 ## 📊 Current Metrics
 
-- **Backend tests:** 13/13 passing
+- **Backend tests:** 23/23 passing
+- **Sandbox isolation tests:** 9/9 passing
 - **Evaluation precision / recall:** 1.0 / 1.0 (100% on benchmark cases)
 - **Analysis latency:** P50 ~29ms, P95 ~31ms (<50ms target met)
-- **Frontend build:** Clean production build passing (1,024 modules transformed)
+- **Frontend build:** Clean production build passing (`✓ 1029 modules transformed`)
 
-## ⏭️ Next Phase: PH3 — Sandbox and Execution
+## ⏭️ Next Phase: PH4 — Mentor Engine
 
-**Scope:** Safe containerized execution of untrusted learner code and test cases.
+**Scope:** Progressive 4-level hint ladder (H1 orientation to H4 solution reveal), LLM integration (local LM Studio / Ollama + hosted APIs), secret redaction, template fallback explanations, and strict anti-leakage guardrails.

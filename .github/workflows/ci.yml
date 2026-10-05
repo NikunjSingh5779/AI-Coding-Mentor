@@ -134,17 +134,17 @@ jobs:
 
     - name: Build sandbox images
       run: |
-        docker build -t mentor-sandbox-python sandbox/images/python
+        docker build -t coding-mentor-python:latest -t ai-screener-sandbox:latest sandbox/images/python
 
     - name: Install sandbox dependencies
       run: |
         cd sandbox
         uv sync --dev
 
-    - name: Run sandbox isolation tests
+    - name: Run sandbox isolation and limit tests
       run: |
         cd sandbox
-        uv run pytest tests/ -m "isolation or limits"
+        uv run pytest tests/ -v
 
   # End-to-End Tests
   e2e-tests:

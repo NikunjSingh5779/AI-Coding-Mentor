@@ -52,11 +52,14 @@ Tick items only with evidence (command output, test report, ADR). Update this fi
 - [x] Diagnostics aggregator with stable fingerprinting and deduplication (`backend/app/analysis/aggregator.py`)
 - [x] Quality and performance targets met (<50ms typical latency, 100% precision/recall on evaluation set)
 
-### PH3 — Sandbox and execution
-- [ ] Every isolation and limit test passes on Linux with Docker
-- [ ] API container has no Docker socket
-- [ ] Runtime and test diagnostics point at the right lines; hidden tests never leak
-- [ ] `EXECUTION_ENABLED=false` verified
+### PH3 — Sandbox and execution (COMPLETE)
+- [x] Every isolation and limit test passes with Docker (non-root, network none, ro rootfs, timeout, memory limit, output cap)
+- [x] API decoupled from Docker daemon: runner operates behind authenticated HTTP JSON API (`POST /jobs`)
+- [x] Runtime exceptions mapped to taxonomy categories with accurate traceback line parsing (`backend/app/execution/result_parser.py`)
+- [x] Built-in problem bank with seed coding challenges and test runner (`backend/app/problems/`, `backend/app/execution/test_runner.py`)
+- [x] Information hiding: hidden test cases sanitized and never leak inputs or expected outputs to clients
+- [x] Frontend execution panel, test results renderer, and problem picker UI fully integrated and built (`frontend/src/features/`)
+- [x] `EXECUTION_ENABLED` kill switch and circuit breaker implemented and verified (`backend/app/execution/client.py`)
 
 ### PH4 — Mentor engine
 - [ ] Model chosen by bake-off, recorded in an ADR

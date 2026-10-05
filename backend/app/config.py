@@ -34,11 +34,17 @@ class Settings(BaseSettings):
     )
 
     # Sandbox runner
+    execution_enabled: bool = Field(
+        default=True, description="Enable code execution in the sandbox runner"
+    )
     sandbox_url: str = Field(
-        default="http://localhost:8001", description="Sandbox runner service URL"
+        default="http://localhost:8100", description="Sandbox runner service URL"
+    )
+    sandbox_secret: str = Field(
+        default="mentor-sandbox-secret-dev", description="Shared secret for sandbox runner authentication"
     )
     sandbox_timeout: int = Field(
-        default=30, description="Sandbox execution timeout in seconds"
+        default=10, description="Sandbox execution timeout in seconds"
     )
 
     # LLM settings (for later phases)
