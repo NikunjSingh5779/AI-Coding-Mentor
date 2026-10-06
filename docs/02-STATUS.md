@@ -1,8 +1,8 @@
 # 02 — Project Status
 
 **Current Status:** Phase 2 Complete ✅ — Ready for Phase 3  
-**Last Updated:** 2026-10-05  
-**Branch:** `phase/2-fast-static-analysis`
+**Last Updated:** 2026-10-07  
+**Branch:** `main`
 
 ## ✅ Phase 0 Achievements
 
@@ -43,15 +43,12 @@
   - Stage-level timing breakdown (<50ms typical runtime)
 - **Evaluation Suite (`eval/`)**
   - Labeled dataset of clean and buggy snippets (`eval/datasets/code_bugs/`)
-  - Accuracy and precision/recall evaluation harness (`eval/harness/run_eval.py` -> 100% precision & recall)
-  - Latency and throughput benchmark (`eval/harness/bench_latency.py` -> P95 ~31ms)
+  - Accuracy and precision/recall evaluation harness and latency benchmark are present
+  - Historical benchmark numbers below are retained as prior evidence; they have not been re-run on the post-audit branch
 
-## 📊 Current Metrics
+## 📊 Evidence / Metrics
 
-- **Backend tests:** 13/13 passing
-- **Evaluation precision / recall:** 1.0 / 1.0 (100% on benchmark cases)
-- **Analysis latency:** P50 ~29ms, P95 ~31ms (<50ms target met)
-- **Frontend build:** Clean production build passing (1,024 modules transformed)
+The repository contains prior Phase 2 benchmark evidence (including 13/13 backend tests, 100% benchmark precision/recall, and sub-50ms latency). The post-audit branch has not been re-executed in a clean external runner in this environment, so those figures should be treated as historical until CI confirms the current commit.
 
 ## ⏭️ Next Phase: PH3 — Sandbox and Execution
 
