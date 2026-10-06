@@ -22,6 +22,7 @@ def get_execution_service() -> ExecutionService:
             settings.sandbox_url,
             timeout=settings.sandbox_max_timeout + 5,
             max_code_bytes=settings.max_code_bytes,
+            secret=settings.sandbox_secret,
         )
     )
 
