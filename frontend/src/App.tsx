@@ -9,8 +9,10 @@ import CodeEditor from './components/CodeEditor';
 import DiagnosticPanel from './components/DiagnosticPanel';
 import { ProblemPanel } from './features/problems/ProblemPanel';
 import { RunPanel } from './features/run/RunPanel';
+import { MentorPanel } from './components/MentorPanel';
 import { useAnalysisStore } from './stores/analysisStore';
 import { useProblemStore } from './stores/problemStore';
+import { useMentorStore } from './stores/mentorStore';
 import { Diagnostic } from './types/analysis';
 import { Problem } from './types/execution';
 import './App.css';
@@ -28,6 +30,7 @@ function App() {
   } = useAnalysisStore();
 
   const { selectedProblem } = useProblemStore();
+  const resetMentor = useMentorStore((s) => s.reset);
 
   const [code, setCode] = useState(
     `# Welcome to AI Real-Time Coding Screener
@@ -251,6 +254,22 @@ if __name__ == "__main__":
                   onDiagnosticClick={handleDiagnosticClick}
                   className="flex-1 border-none rounded-none"
                 />
+
+                {/* AI Mentor hint panel (Phase 4) */}
+                <div className="border-t border-gray-800 flex-[1.2] min-h-0 flex flex-col">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-300 bg-gray-900 flex items-center justify-between">
+                    <span>🧭 AI Mentor</span>
+                    <button
+                      onClick={resetMentor}
+                      className="text-[10px] text-gray-500 hover:text-gray-300"
+                    >
+                      clear
+                    </button>
+                  </div>
+                  <div className="flex-1 min-h-0 p-2">
+                    <MentorPanel />
+                  </div>
+                </div>
 
                 {/* Selected Diagnostic Detail */}
                 {selectedDiagnostic && (

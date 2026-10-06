@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     )
 
     # LLM settings (for later phases)
+    llm_enabled: bool = Field(
+        default=False, description="Enable LLM-backed hints; false = template fallbacks only"
+    )
     llm_provider: str = Field(
         default="openai_compatible", description="LLM provider to use"
     )
@@ -65,6 +68,20 @@ class Settings(BaseSettings):
     )
     max_concurrent_runs: int = Field(
         default=3, description="Maximum concurrent code executions"
+    )
+
+    # Mentor settings
+    mentor_proactivity_default: str = Field(
+        default="balanced", description="Default mentor proactivity (quiet|balanced|proactive)"
+    )
+    hint_cooldown_seconds: int = Field(
+        default=20, description="Minimum seconds between mentor messages per issue"
+    )
+    hosted_llm_budget_session: int = Field(
+        default=50, description="Max hosted LLM hint generations per session"
+    )
+    hosted_llm_budget_day: int = Field(
+        default=200, description="Max hosted LLM hint generations per day"
     )
 
     # WebSocket

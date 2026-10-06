@@ -1,0 +1,1 @@
+"""Mentor engine: progressive hints from verified diagnostics."""
