@@ -10,10 +10,12 @@ import asyncio
 import tempfile
 import time
 from pathlib import Path
+import hmac
+import os
 
 import docker
 from docker.errors import APIError, DockerException, ImageNotFound
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from languages import LANGUAGE_COMMANDS, LANGUAGE_IMAGES
@@ -34,6 +36,8 @@ class ExecutionResult(BaseModel):
     execution_time_ms: int
     error_type: str | None = None
 
+
+SANDBOX_SECRET = os.getenv('SANDBOX_SECRET', '')
 
 class SandboxRunner:
     def __init__(self) -> None:
@@ -154,8 +158,13 @@ app = FastAPI(title="AI Coding Mentor Sandbox Runner", version="1.0.0")
 runner = SandboxRunner()
 
 
-@app.post("/execute", response_model=ExecutionResult)
-async def execute_code(request: ExecutionRequest) -> ExecutionResult:
+@app.post('/execute', response_model=ExecutionResult)
+async def execute_code(
+    request: ExecutionRequest,
+    x_sandbox_secret: str | None = Header(default=None),
+) -> ExecutionResult:
+    if SANDBOX_SECRET and not hmac.compare_digest(x_sandbox_secret or '', SANDBOX_SECRET):
+        raise HTTPException(401, 'Invalid sandbox credentials')
     return await runner.execute(request)
 
 
