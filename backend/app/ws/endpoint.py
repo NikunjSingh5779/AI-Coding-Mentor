@@ -266,7 +266,9 @@ async def handle_code_update(
             "analysis_time_ms": round(elapsed_ms, 2),
             "lines_of_code": len(code.splitlines()),
             "has_syntax_errors": any(
-                d.category.startswith("SYNTAX_") for d in diagnostics
+                d.origin in {Origin.PARSER, Origin.TREESITTER}
+                and d.severity == Severity.ERROR
+                for d in diagnostics
             ),
             "performance": {
                 "within_budget": elapsed_ms <= 100,
@@ -365,7 +367,7 @@ async def websocket_endpoint(
     except Exception:
         logger.exception(
             "WebSocket connection failed",
-            extra={"session_token": session_token},
+            extra={"session_id": _session_log_id(session_token)},
         )
         try:
             await websocket.send_json(
