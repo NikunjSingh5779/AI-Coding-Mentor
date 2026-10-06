@@ -3,7 +3,7 @@ Complete Development Commands and Setup for AI Real-Time Coding Screener
 """
 
 # Development commands for easy project management
-.PHONY: help dev-backend dev-frontend db-up db-down sandbox-build test check clean install-deps
+.PHONY: help dev-backend dev-frontend db-up db-down test check clean install-deps setup dev-all
 
 help: ## Show this help message
 	@echo "AI Real-Time Coding Screener - Development Commands"
@@ -14,7 +14,7 @@ install-deps: ## Install all dependencies
 	@echo "Installing backend dependencies..."
 	cd backend && uv sync
 	@echo "Installing frontend dependencies..."
-	cd frontend && pnpm install
+	cd frontend && pnpm install --frozen-lockfile
 	@echo "Installing sandbox dependencies..."
 	cd sandbox && uv sync
 
@@ -32,10 +32,6 @@ db-up: ## Start PostgreSQL database
 
 db-down: ## Stop PostgreSQL database (keeps data volume)
 	docker compose down db
-
-sandbox-build: ## Build Python sandbox Docker image
-	@echo "Building Python sandbox..."
-	cd sandbox && docker build -t ai-screener-sandbox .
 
 test: ## Run all tests
 	@echo "Running backend tests..."
@@ -56,7 +52,7 @@ clean: ## Clean build artifacts
 	cd frontend && rm -rf dist/ node_modules/.cache/ 2>/dev/null || true
 
 # Full development setup
-setup: install-deps db-up sandbox-build ## Complete development environment setup
+setup: install-deps db-up ## Complete development environment setup
 	@echo "✅ AI Real-Time Coding Screener setup complete!"
 	@echo ""
 	@echo "🚀 To start development:"
@@ -68,15 +64,10 @@ setup: install-deps db-up sandbox-build ## Complete development environment setu
 	@echo "   Backend API: http://localhost:8000"
 	@echo "   API Docs: http://localhost:8000/docs"
 
-# Production deployment
-deploy-prod: ## Deploy to production
-	@echo "Deploying AI Real-Time Coding Screener to production..."
-	docker-compose -f docker-compose.prod.yml up -d --build
-
 # Development with all services
 dev-all: ## Start all development services
 	docker-compose up -d
 	@echo "All services started:"
 	@echo "  - Frontend: http://localhost:5173"
 	@echo "  - Backend: http://localhost:8000"
-	@echo "  - Database: localhost:5432"
+	@echo "  - Database: localhost:5433"
