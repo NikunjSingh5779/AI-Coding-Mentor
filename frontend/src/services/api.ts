@@ -1,4 +1,4 @@
-import type { Diagnostic } from '../types/analysis';
+import type { BackendDiagnostic, Diagnostic } from '../types/analysis';
 
 const API_BASE = (
   (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL ||
@@ -36,7 +36,7 @@ export async function runTests(sessionToken: string, code: string, language: str
   return request<TestResult>('/api/v1/execution/test', { method: 'POST', body: JSON.stringify({ session_token: sessionToken, code, language, problem_id: problemId }) });
 }
 export async function requestHint(sessionToken: string, code: string, diagnostics: Diagnostic[], hintLevel?: number, allowSolution = false): Promise<Hint> {
-  return request<Hint>('/api/v1/mentor/hint', { method: 'POST', body: JSON.stringify({ session_token: sessionToken, code, diagnostics, hint_level: hintLevel ?? null, allow_solution: allowSolution }) });
+  const payloadDiagnostics = diagnostics.map(diagnostic => ({\n    id: diagnostic.id,\n    seq: diagnostic.seq ?? 0,\n    origin: diagnostic.source,\n    rule: diagnostic.code ?? null,\n    category: diagnostic.category,\n    severity: diagnostic.severity,\n    message_raw: diagnostic.message,\n    range: {\n      start: { line: diagnostic.line, col: diagnostic.column + 1 },\n      end: { line: diagnostic.end_line ?? diagnostic.line, col: (diagnostic.end_column ?? diagnostic.column) + 1 },\n    },\n    fingerprint: diagnostic.fingerprint ?? 'frontend',\n    confidence: diagnostic.confidence ?? 0.8,\n  }));\n  return request<Hint>('/api/v1/mentor/hint', { method: 'POST', body: JSON.stringify({ session_token: sessionToken, code, diagnostics: payloadDiagnostics, hint_level: hintLevel ?? null, allow_solution: allowSolution }) });
 }
 export async function sendHintFeedback(sessionToken: string, hintId: number, wasHelpful: boolean, reaction?: string) {
   return request<{ recorded: boolean }>('/api/v1/mentor/hint/' + hintId + '/feedback', { method: 'POST', body: JSON.stringify({ session_token: sessionToken, was_helpful: wasHelpful, reaction: reaction ?? null }) });
@@ -54,5 +54,5 @@ export async function analyzeScreen(sessionToken: string, blob: Blob, language =
   const url = API_BASE + '/api/v1/screen/analyze?session_token=' + encodeURIComponent(sessionToken) + '&language=' + encodeURIComponent(language);
   const response = await fetch(url, { method: 'POST', body: form });
   if (!response.ok) throw new Error((await response.text()) || 'Screen analysis failed');
-  return response.json() as Promise<{ detected: boolean; confidence: number; region: { left: number; top: number; width: number; height: number } | null; code: string; diagnostics: Diagnostic[]; notice?: string | null }>;
+  const body = await response.json() as { detected: boolean; confidence: number; region: { left: number; top: number; width: number; height: number } | null; code: string; diagnostics: BackendDiagnostic[]; notice?: string | null };\n  const diagnostics: Diagnostic[] = body.diagnostics.map(item => ({\n    id: item.id, seq: item.seq ?? 0,\n    line: item.range?.start?.line ?? 1,\n    column: (item.range?.start?.column ?? item.range?.start?.col ?? 1) - 1,\n    end_line: item.range?.end?.line ?? item.range?.start?.line ?? 1,\n    end_column: (item.range?.end?.column ?? item.range?.end?.col ?? item.range?.start?.col ?? 1) - 1,\n    message: item.message ?? item.message_raw ?? 'Analysis finding',\n    severity: item.severity ?? 'info', source: item.origin ?? 'screen',\n    category: item.category ?? 'unknown', code: item.rule ?? null,\n    fingerprint: item.fingerprint, confidence: item.confidence,\n  }));\n  return { ...body, diagnostics };
 }
