@@ -1,46 +1,51 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
-  },
-  server: {
-    port: 5173,
-    host: true,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
-      '/ws': {
-        target: 'ws://localhost:8000',
-        ws: true,
+const root = path.dirname(fileURLToPath(import.meta.url));
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, root, '');
+
+  return {
+    plugins: [react()],
+    resolve: {
+      alias: {
+        '@': path.resolve(root, './src'),
       },
     },
-  },
-  build: {
-    outDir: 'dist',
-    sourcemap: true,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          monaco: ['@monaco-editor/react', 'monaco-editor'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
+    server: {
+      port: 5173,
+      host: true,
+      proxy: {
+        '/api': {
+          target: env.VITE_PROXY_API_URL || 'http://localhost:8000',
+          changeOrigin: true,
+        },
+        '/ws': {
+          target: env.VITE_PROXY_WS_URL || 'ws://localhost:8000',
+          ws: true,
         },
       },
     },
-  },
-  define: {
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
-  },
-  optimizeDeps: {
-    include: ['react', 'react-dom', '@monaco-editor/react'],
-  },
-})
+    build: {
+      outDir: 'dist',
+      sourcemap: true,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            monaco: ['@monaco-editor/react', 'monaco-editor'],
+          },
+        },
+      },
+    },
+    define: {
+      __APP_VERSION__: JSON.stringify(env.npm_package_version || '1.0.0'),
+    },
+    optimizeDeps: {
+      include: ['react', 'react-dom', '@monaco-editor/react'],
+    },
+  };
+});
