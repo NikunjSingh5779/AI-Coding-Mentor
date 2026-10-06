@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db_session
-from app.models.session import CodeAnalysis, CodingSession, MentorHint
+from app.models.session import CodeAnalysis, MentorHint
 from app.persistence.service import get_session
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
