@@ -10,6 +10,7 @@ import DiagnosticPanel from './components/DiagnosticPanel';
 import { ProblemPanel } from './features/problems/ProblemPanel';
 import { RunPanel } from './features/run/RunPanel';
 import { MentorPanel } from './components/MentorPanel';
+import { CapturePanel } from './features/capture/CapturePanel';
 import { useAnalysisStore } from './stores/analysisStore';
 import { useProblemStore } from './stores/problemStore';
 import { useMentorStore } from './stores/mentorStore';
@@ -54,7 +55,7 @@ if __name__ == "__main__":
 
   const [selectedDiagnostic, setSelectedDiagnostic] = useState<Diagnostic | null>(null);
   const [theme, setTheme] = useState<'vs-dark' | 'vs-light'>('vs-dark');
-  const [sidebarTab, setSidebarTab] = useState<'problems' | 'diagnostics' | 'run'>('problems');
+  const [sidebarTab, setSidebarTab] = useState<'problems' | 'diagnostics' | 'run' | 'capture'>('problems');
 
   // Auto-connect WebSocket on mount
   useEffect(() => {
@@ -237,6 +238,17 @@ if __name__ == "__main__":
                 </span>
               )}
             </button>
+            <button
+              onClick={() => setSidebarTab('capture')}
+              className={`flex-1 py-2.5 text-xs font-semibold transition-colors flex items-center justify-center space-x-1.5 ${
+                sidebarTab === 'capture'
+                  ? 'border-b-2 border-blue-500 text-blue-400 bg-gray-950'
+                  : 'text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              <span>🖥️</span>
+              <span>Screen</span>
+            </button>
           </div>
 
           {/* Sidebar Tab Content */}
@@ -246,6 +258,10 @@ if __name__ == "__main__":
                 onSelectProblem={handleProblemSelect}
                 className="h-full border-none rounded-none"
               />
+            )}
+
+            {sidebarTab === 'capture' && (
+              <CapturePanel sessionToken="dev-session" />
             )}
 
             {sidebarTab === 'diagnostics' && (
