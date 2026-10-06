@@ -9,6 +9,7 @@ from typing import Any
 
 from app.analysis.aggregator import DiagnosticsAggregator
 from app.analysis.linters.ruff_python import RuffPythonLinter
+from app.analysis.polyglot import analyze_polyglot
 from app.analysis.python_ast import analyze_python_ast
 from app.analysis.treesitter.errors import extract_treesitter_diagnostics
 from app.config import get_settings
@@ -27,11 +28,16 @@ class AnalysisPipeline:
             return [], {}
 
         settings = get_settings()
-        enabled = {item.strip().lower() for item in settings.enabled_analyzers}
-
-        if language.lower() != "python":
+        language = language.lower().strip()
+        if language not in {item.lower() for item in settings.enabled_languages}:
             return [], {"total": 0.0}
 
+        if language != "python":
+            started = time.perf_counter()
+            diagnostics = analyze_polyglot(code, language, seq)
+            return diagnostics, {"polyglot": round((time.perf_counter() - started) * 1000, 2)}
+
+        enabled = {item.strip().lower() for item in settings.enabled_analyzers}
         loop = asyncio.get_running_loop()
         started = time.perf_counter()
         tasks: list[asyncio.Future[Any]] = []
@@ -41,7 +47,8 @@ class AnalysisPipeline:
             names.append("python_ast")
             tasks.append(
                 loop.run_in_executor(
-                    None, lambda: self._timed(analyze_python_ast, code, seq)
+                    None,
+                    lambda: self._timed(analyze_python_ast, code, seq),
                 )
             )
         if "treesitter" in enabled:
@@ -67,9 +74,9 @@ class AnalysisPipeline:
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
         total_ms = (time.perf_counter() - started) * 1000
-
         diagnostics: list[Diagnostic] = []
         timings: dict[str, float] = {}
+
         for name, result in zip(names, results, strict=False):
             if isinstance(result, Exception):
                 timings[name] = 0.0
@@ -79,8 +86,12 @@ class AnalysisPipeline:
             timings[name] = round(duration, 2)
 
         aggregate_started = time.perf_counter()
-        aggregated = self.aggregator.aggregate(diagnostics, code_lines=code.splitlines())
-        timings["aggregator"] = round((time.perf_counter() - aggregate_started) * 1000, 2)
+        aggregated = self.aggregator.aggregate(
+            diagnostics, code_lines=code.splitlines()
+        )
+        timings["aggregator"] = round(
+            (time.perf_counter() - aggregate_started) * 1000, 2
+        )
         timings["total"] = round(total_ms + timings["aggregator"], 2)
         return aggregated, timings
 
