@@ -182,7 +182,7 @@ jobs:
       run: |
         npm install -g pnpm@11.8.0
         pip install uv
-        cd frontend && pnpm install
+        cd frontend && pnpm install --frozen-lockfile
         cd ../backend && uv sync
 
     - name: Install Playwright browsers
