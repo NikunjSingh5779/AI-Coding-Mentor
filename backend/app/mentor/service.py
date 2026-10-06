@@ -32,6 +32,8 @@ class MentorService:
         analysis: CodeAnalysis | None,
         requested_level: int | None,
         allow_solution: bool,
+        code: str = "",
+        diagnostic_dicts: list[dict] | None = None,
     ) -> dict:
         if requested_level is not None and requested_level not in {1, 2, 3, 4}:
             raise ValueError("hint_level must be between 1 and 4")
@@ -47,9 +49,12 @@ class MentorService:
             raise ValueError("Mentor hint limit reached")
 
         diagnostics = []
-        if analysis and isinstance(analysis.findings, list):
+        source_findings = diagnostic_dicts
+        if source_findings is None and analysis and isinstance(analysis.findings, list):
+            source_findings = analysis.findings
+        if source_findings:
             from app.schemas.diagnostic import Diagnostic
-            for item in analysis.findings:
+            for item in source_findings:
                 try:
                     diagnostics.append(Diagnostic.model_validate(item))
                 except Exception:
@@ -63,7 +68,7 @@ class MentorService:
         if level == 4 and not allow_solution:
             raise PermissionError("H4 requires explicit confirmation")
 
-        code = safe_hint_text(session.current_code or "", 16000, True)
+        code = safe_hint_text(code or session.current_code or "", 16000, True)
         category = diagnostics[0].category if diagnostics else "LOGIC_SUSPICION"
         prompt_hash = hashlib.sha256(
             f"{session.id}|{analysis.id if analysis else 0}|{level}|{code}".encode()
