@@ -14,8 +14,11 @@ from fastapi import WebSocket, WebSocketDisconnect
 from starlette.websockets import WebSocketState
 
 from app.analysis.pipeline import AnalysisPipeline
+from app.core.database import AsyncSessionLocal
+from app.persistence.service import get_session, record_analysis
 from app.config import get_settings
 from app.core.logging import get_logger
+from app.schemas.diagnostic import Origin, Severity
 
 logger = get_logger(__name__)
 
@@ -42,7 +45,7 @@ class ConnectionManager:
         settings = get_settings()
         self._sessions: dict[str, WebSocketSession] = {}
         self._heartbeat_interval = max(5, settings.ws_heartbeat_interval)
-        self._max_message_size = max(1024, settings.ws_max_message_size)
+        self._max_message_size = max(1024, settings.max_message_bytes)
         self._heartbeat_task: asyncio.Task[None] | None = None
         self._analysis_semaphore: asyncio.Semaphore | None = None
 
@@ -229,6 +232,27 @@ async def handle_code_update(
         # The connection was replaced or a newer snapshot arrived.
         return
 
+    analysis_id = None
+    try:
+        async with AsyncSessionLocal() as db:
+            db_session = await get_session(db, session_token)
+            if db_session is not None:
+                persisted = await record_analysis(
+                    db,
+                    db_session,
+                    code=code,
+                    diagnostics=diagnostics,
+                    timings=stage_timings,
+                    settings=get_settings(),
+                )
+                await db.commit()
+                analysis_id = persisted.id
+    except Exception:
+        logger.exception(
+            "Failed to persist analysis",
+            extra={"session_id": _session_log_id(session_token)},
+        )
+
     session.analysis_count += 1
     session.total_analysis_time += elapsed_ms
 
@@ -277,6 +301,7 @@ async def handle_code_update(
             "stage_timings": stage_timings,
             "timestamp": time.time(),
             "language": language,
+            "analysis_id": analysis_id,
         }
     )
 
