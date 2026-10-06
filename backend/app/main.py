@@ -21,7 +21,7 @@ from app.core.database import close_database, init_database
 from app.core.errors import AppError
 from app.core.events import EventBus
 from app.core.logging import get_logger, setup_logging
-from app.persistence.service import seed_problems
+from app.persistence.service import cleanup_expired_sessions, seed_problems
 from app.problems.problem_bank import list_all_problems
 from app.ws.endpoint import websocket_endpoint
 
@@ -37,6 +37,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Seed built-in problems without storing reference solutions in API responses.
     async with app.state.db_session_factory() as db:
         await seed_problems(db, list_all_problems())
+        await cleanup_expired_sessions(db, settings.retention_days)
         await db.commit()
 
     app.state.event_bus = EventBus()
