@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   db:
@@ -8,16 +8,31 @@ services:
       POSTGRES_USER: mentor
       POSTGRES_PASSWORD: password
     ports:
-      # Host port 5433: local port 5432 is already used by another Postgres
-      # (ares-postgres). Change here if that service is removed.
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mentor"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD-SHELL", "pg_isready -U mentor -d mentor"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  sandbox:
+    build:
+      context: ./sandbox
+      dockerfile: Dockerfile
+    ports:
+      - "8100:8100"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      db:
+        condition: service_healthy
 
   backend:
     build:
@@ -26,29 +41,43 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://mentor:password@db:5432/mentor
+      DATABASE_URL: postgresql+asyncpg://mentor:password@db:5432/mentor
+      SANDBOX_URL: http://sandbox:8100
+      EXECUTION_ENABLED: "true"
+      FEATURE_SCREEN_SOURCE: "false"
+      LLM_ENABLED: "true"
     depends_on:
       db:
+        condition: service_healthy
+      sandbox:
         condition: service_healthy
     volumes:
       - ./backend:/app
       - backend_venv:/app/.venv
     command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: frontend-dev
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_URL=http://localhost:8000
-      - VITE_WS_URL=ws://localhost:8000
+      VITE_API_URL: http://localhost:8000
+      VITE_WS_URL: ws://localhost:8000
     volumes:
       - ./frontend:/app
       - /app/node_modules
     command: pnpm dev --host
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   postgres_data:
