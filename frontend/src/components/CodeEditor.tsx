@@ -22,6 +22,8 @@ const toMarkerSeverity = (severity: Diagnostic['severity']): monaco.MarkerSeveri
       return monaco.MarkerSeverity.Warning;
     case 'hint':
       return monaco.MarkerSeverity.Hint;
+    case 'suspicion':
+      return monaco.MarkerSeverity.Warning;
     default:
       return monaco.MarkerSeverity.Info;
   }
@@ -40,8 +42,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const diagnosticsRef = useRef<Diagnostic[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const codeRef = useRef(initialCode);
-  const { diagnostics, sendCodeUpdate, connectionStatus, lastAnalysisTime } =
-    useAnalysisStore();
+  const { diagnostics, sendCodeUpdate, connectionStatus, lastAnalysisTime } = useAnalysisStore();
   const [code, setCode] = useState(initialCode);
 
   diagnosticsRef.current = diagnostics;
@@ -127,6 +128,13 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     },
     [language, onCodeChange, sendCodeUpdate],
   );
+
+  useEffect(() => {
+    if (initialCode !== codeRef.current) {
+      codeRef.current = initialCode;
+      setCode(initialCode);
+    }
+  }, [initialCode]);
 
   useEffect(() => {
     return () => {
