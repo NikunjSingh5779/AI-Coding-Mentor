@@ -1,5 +1,5 @@
 /**
- * TypeScript types for real-time code analysis
+ * Wire and editor types for real-time analysis.
  */
 
 export interface Diagnostic {
@@ -28,6 +28,10 @@ export interface BackendDiagnostic {
   severity?: Diagnostic['severity'];
   message?: string;
   message_raw?: string;
+  line?: number;
+  column?: number;
+  end_line?: number | null;
+  end_column?: number | null;
   range?: {
     start?: { line?: number; column?: number; col?: number };
     end?: { line?: number; column?: number; col?: number };
@@ -51,6 +55,7 @@ export interface AnalysisResult {
   };
   timestamp: number;
   language: string;
+  analysis_id?: number | null;
 }
 
 export interface CodeUpdateMessage {
@@ -95,21 +100,14 @@ export type WebSocketMessage =
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
 export interface WebSocketState {
-  // Connection state
   connectionStatus: ConnectionStatus;
   sessionToken: string | null;
   lastError: string | null;
-
-  // Analysis state
   diagnostics: Diagnostic[];
   lastAnalysisTime: number | null;
   sequenceNumber: number;
-
-  // Performance metrics
   analysisCount: number;
   averageAnalysisTime: number;
-
-  // Actions
   connect: (sessionToken?: string) => void;
   disconnect: () => void;
   sendCodeUpdate: (code: string, language?: string) => void;
