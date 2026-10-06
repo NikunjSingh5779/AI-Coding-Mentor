@@ -1,64 +1,59 @@
-"""
-Database configuration for AI Real-Time Coding Screener
-Following MVC pattern: Core layer handles database setup and connections
-"""
+"""SQLAlchemy 2.x database lifecycle and dependency helpers."""
 
-import logging
+from __future__ import annotations
+
 from collections.abc import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-# Base class for all models
-Base = declarative_base()
-
-# Global engine and session factory
-engine = None
-AsyncSessionLocal = None
-
-logger = logging.getLogger(__name__)
+from app.config import get_settings
+from app.models.session import Base
 
 
-async def init_database(database_url: str) -> None:
-    """Initialize database engine and session factory"""
-    global engine, AsyncSessionLocal
+settings = get_settings()
 
-    logger.info("Initializing database connection...")
+engine_kwargs: dict[str, object] = {
+    "echo": settings.debug,
+    "pool_pre_ping": True,
+}
+if settings.database_url.startswith("sqlite+aiosqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
 
-    engine = create_async_engine(
-        database_url,
-        echo=False,  # Set to True for SQL debugging
-        future=True,
-        pool_pre_ping=True,
-    )
+engine = create_async_engine(settings.database_url, **engine_kwargs)
+AsyncSessionLocal = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
 
-    AsyncSessionLocal = sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
 
-    # Create tables if they don't exist
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+async def init_database() -> None:
+    """Create application tables for local/dev use.
 
-    logger.info("Database initialized successfully")
+    Production can replace this with Alembic migrations without changing the
+    application-facing session dependency.
+    """
+
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.create_all)
 
 
 async def close_database() -> None:
-    """Close database connections"""
-    global engine
+    """Dispose all database connections."""
 
-    if engine:
-        await engine.dispose()
-        logger.info("Database connections closed")
+    await engine.dispose()
 
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    """Dependency to get database session"""
+    """FastAPI dependency that owns one transaction-scoped session."""
+
     async with AsyncSessionLocal() as session:
         try:
             yield session
-        except Exception as e:
+            await session.commit()
+        except Exception:
             await session.rollback()
-            raise e
-        finally:
-            await session.close()
+            raise
+
+
+__all__ = ["AsyncSessionLocal", "Base", "close_database", "engine", "get_db_session", "init_database"]
