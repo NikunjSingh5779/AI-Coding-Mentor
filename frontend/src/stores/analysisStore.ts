@@ -32,18 +32,50 @@ const getWebSocketUrl = (): string => {
   return base.replace(/^https?:/, protocol);
 };
 
-const normalizeDiagnostic = (diagnostic: any): Diagnostic => ({
+interface BackendDiagnostic {
+  id?: string;
+  seq?: number;
+  origin?: string;
+  rule?: string | null;
+  category?: string;
+  severity?: Diagnostic['severity'];
+  message?: string;
+  message_raw?: string;
+  range?: {
+    start?: { line?: number; column?: number; col?: number };
+    end?: { line?: number; column?: number; col?: number };
+  };
+  line?: number;
+  column?: number;
+  end_line?: number | null;
+  end_column?: number | null;
+  fix_suggestion?: string | null;
+  fingerprint?: string;
+  confidence?: number;
+}
+
+const normalizeDiagnostic = (diagnostic: BackendDiagnostic): Diagnostic => ({
   id: diagnostic.id,
   seq: diagnostic.seq ?? 0,
   line: diagnostic.range?.start?.line ?? diagnostic.line ?? 1,
-  column: (diagnostic.range?.start?.column ?? diagnostic.range?.start?.col ?? diagnostic.column ?? 1) - 1,
+  column:
+    (diagnostic.range?.start?.column ??
+      diagnostic.range?.start?.col ??
+      diagnostic.column ??
+      1) - 1,
   end_line: diagnostic.range?.end?.line ?? diagnostic.end_line ?? null,
   end_column:
-    (diagnostic.range?.end?.column ?? diagnostic.range?.end?.col ?? diagnostic.end_column ?? null) === null
+    (diagnostic.range?.end?.column ??
+      diagnostic.range?.end?.col ??
+      diagnostic.end_column ??
+      null) === null
       ? null
-      : (diagnostic.range?.end?.column ?? diagnostic.range?.end?.col ?? diagnostic.end_column) - 1,
+      : (diagnostic.range?.end?.column ??
+          diagnostic.range?.end?.col ??
+          diagnostic.end_column ??
+          1) - 1,
   message: diagnostic.message ?? diagnostic.message_raw ?? 'Analysis finding',
-  severity: diagnostic.severity,
+  severity: diagnostic.severity ?? 'info',
   source: diagnostic.source ?? diagnostic.origin ?? 'analysis',
   category: diagnostic.category ?? 'unknown',
   code: diagnostic.code ?? diagnostic.rule ?? null,
