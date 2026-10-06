@@ -11,22 +11,15 @@ import {
   WebSocketMessage,
   AnalysisResult,
   ConnectionStatus,
-  WebSocketState
+  WebSocketState,
 } from '../types/analysis';
 
 interface AnalysisStore extends WebSocketState {
-  // WebSocket service instance
   wsService: WebSocketService | null;
-
-  // Session info
   connectedAt: number | null;
   serverTime: number | null;
-
-  // Message statistics
   messagesSent: number;
   messagesReceived: number;
-
-  // Internal methods
   _handleMessage: (message: WebSocketMessage) => void;
   _handleStatusChange: (status: ConnectionStatus) => void;
   _handleError: (error: string) => void;
@@ -34,56 +27,63 @@ interface AnalysisStore extends WebSocketState {
 
 const getWebSocketUrl = (): string => {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = (import.meta as any).env?.VITE_WS_URL || `${protocol}//${window.location.host}`;
-  return host.replace(/^https?:/, protocol.replace('s', ''));
+  const configured = (import.meta as { env?: { VITE_WS_URL?: string } }).env?.VITE_WS_URL;
+  const base = configured || `${protocol}//${window.location.host}`;
+  return base.replace(/^https?:/, protocol);
 };
 
+const normalizeDiagnostic = (diagnostic: any): Diagnostic => ({
+  id: diagnostic.id,
+  seq: diagnostic.seq ?? 0,
+  line: diagnostic.range?.start?.line ?? diagnostic.line ?? 1,
+  column: (diagnostic.range?.start?.column ?? diagnostic.range?.start?.col ?? diagnostic.column ?? 1) - 1,
+  end_line: diagnostic.range?.end?.line ?? diagnostic.end_line ?? null,
+  end_column:
+    (diagnostic.range?.end?.column ?? diagnostic.range?.end?.col ?? diagnostic.end_column ?? null) === null
+      ? null
+      : (diagnostic.range?.end?.column ?? diagnostic.range?.end?.col ?? diagnostic.end_column) - 1,
+  message: diagnostic.message ?? diagnostic.message_raw ?? 'Analysis finding',
+  severity: diagnostic.severity,
+  source: diagnostic.source ?? diagnostic.origin ?? 'analysis',
+  category: diagnostic.category ?? 'unknown',
+  code: diagnostic.code ?? diagnostic.rule ?? null,
+  fix_suggestion: diagnostic.fix_suggestion ?? null,
+  fingerprint: diagnostic.fingerprint,
+  confidence: diagnostic.confidence,
+});
+
 export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
-  // Connection state
   connectionStatus: 'disconnected',
   sessionToken: null,
   lastError: null,
   wsService: null,
-
-  // Analysis state
   diagnostics: [],
   lastAnalysisTime: null,
   sequenceNumber: 0,
-
-  // Performance metrics
   analysisCount: 0,
   averageAnalysisTime: 0,
-
-  // Session info
   connectedAt: null,
   serverTime: null,
-
-  // Message statistics
   messagesSent: 0,
   messagesReceived: 0,
 
-  // Actions
   connect: (sessionToken = 'default-session') => {
     const state = get();
-
-    // Don't create new connection if already connected with same token
-    if (state.wsService && state.sessionToken === sessionToken &&
-        state.connectionStatus === 'connected') {
+    if (
+      state.wsService &&
+      state.sessionToken === sessionToken &&
+      state.connectionStatus === 'connected'
+    ) {
       return;
     }
 
-    // Disconnect existing connection
-    if (state.wsService) {
-      state.wsService.disconnect();
-    }
-
-    const wsUrl = getWebSocketUrl();
+    state.wsService?.disconnect();
     const wsService = new WebSocketService(
-      wsUrl,
+      getWebSocketUrl(),
       sessionToken,
-      state._handleMessage,
-      state._handleStatusChange,
-      state._handleError
+      get()._handleMessage,
+      get()._handleStatusChange,
+      get()._handleError,
     );
 
     set({
@@ -95,17 +95,17 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
       messagesReceived: 0,
       connectedAt: null,
       serverTime: null,
+      diagnostics: [],
+      analysisCount: 0,
+      averageAnalysisTime: 0,
+      lastAnalysisTime: null,
     });
 
     wsService.connect();
   },
 
   disconnect: () => {
-    const { wsService } = get();
-    if (wsService) {
-      wsService.disconnect();
-    }
-
+    get().wsService?.disconnect();
     set({
       wsService: null,
       connectionStatus: 'disconnected',
@@ -121,93 +121,51 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
 
   sendCodeUpdate: (code: string, language = 'python') => {
     const { wsService, connectionStatus } = get();
-
-    if (!wsService || connectionStatus !== 'connected') {
-      console.warn('Cannot send code update: WebSocket not connected');
-      return;
-    }
-
+    if (!wsService || connectionStatus !== 'connected') return;
     wsService.sendCodeUpdate(code, language);
-
-    set((state) => ({
-      messagesSent: state.messagesSent + 1,
-    }));
+    set((state) => ({ messagesSent: state.messagesSent + 1 }));
   },
 
-  clearDiagnostics: () => {
-    set({
-      diagnostics: [],
-      lastAnalysisTime: null,
-    });
-  },
+  clearDiagnostics: () => set({ diagnostics: [], lastAnalysisTime: null }),
 
-  // Internal message handlers
-  _handleMessage: (message: WebSocketMessage) => {
-    set((state) => ({
-      messagesReceived: state.messagesReceived + 1,
-    }));
-
+  _handleMessage: (message) => {
+    set((state) => ({ messagesReceived: state.messagesReceived + 1 }));
     switch (message.type) {
-      case 'analysis_result':
-        const analysisResult = message as AnalysisResult;
-
+      case 'analysis_result': {
+        const result = message as AnalysisResult;
         set((state) => {
-          // Calculate new average analysis time
+          // Drop stale results. The backend also guarantees latest-sequence semantics.
+          if (result.sequence < state.sequenceNumber) return state;
           const newCount = state.analysisCount + 1;
-          const newAverage = (
-            (state.averageAnalysisTime * state.analysisCount + analysisResult.analysis_time_ms) /
-            newCount
-          );
-
+          const newAverage =
+            (state.averageAnalysisTime * state.analysisCount + result.analysis_time_ms) / newCount;
           return {
-            diagnostics: analysisResult.diagnostics,
-            lastAnalysisTime: analysisResult.analysis_time_ms,
+            diagnostics: result.diagnostics.map(normalizeDiagnostic),
+            lastAnalysisTime: result.analysis_time_ms,
             analysisCount: newCount,
             averageAnalysisTime: Math.round(newAverage),
-            sequenceNumber: Math.max(state.sequenceNumber, analysisResult.sequence),
+            sequenceNumber: result.sequence,
           };
         });
         break;
-
+      }
       case 'session_info':
-        set({
-          connectedAt: message.connected_at,
-          serverTime: message.server_time,
-        });
+        set({ connectedAt: message.connected_at, serverTime: message.server_time });
         break;
-
       case 'error':
-        console.error('WebSocket error:', message.message);
-        set({
-          lastError: message.message,
-        });
+        set({ lastError: message.message });
         break;
-
       case 'ping':
       case 'pong':
-        // Handled by WebSocket service for heartbeat
         break;
-
-      default:
-        console.warn('Unknown message type:', message);
     }
   },
 
-  _handleStatusChange: (status: ConnectionStatus) => {
-    set({ connectionStatus: status });
-
-    if (status === 'connected') {
-      set({ lastError: null });
-    }
+  _handleStatusChange: (status) => {
+    set({ connectionStatus: status, ...(status === 'connected' ? { lastError: null } : {}) });
   },
 
-  _handleError: (error: string) => {
-    set({
-      lastError: error,
-      connectionStatus: 'error',
-    });
-    console.error('WebSocket service error:', error);
-  },
+  _handleError: (error) => set({ lastError: error, connectionStatus: 'error' }),
 }));
 
 // Auto-connect on store creation in development
