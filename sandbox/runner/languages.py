@@ -13,7 +13,7 @@ LANGUAGE_COMMANDS = {
     "javascript": ("main.js", "node /workspace/main.js"),
     "cpp": (
         "main.cpp",
-        "mkdir -p /tmp/work && cp /workspace/main.cpp /tmp/work/main.cpp && "
+        "mkdir -p /exec/work && cp /workspace/main.cpp /tmp/work/main.cpp && "
         "g++ -std=c++17 -O0 -pipe /tmp/work/main.cpp -o /tmp/work/main && /tmp/work/main",
     ),
     "c": (
