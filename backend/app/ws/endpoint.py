@@ -160,6 +160,33 @@ manager = ConnectionManager()
 pipeline = AnalysisPipeline()
 
 
+async def _persist_analysis(
+    session_token: str,
+    code: str,
+    diagnostics: list[Any],
+    timings: dict[str, float],
+) -> None:
+    try:
+        async with AsyncSessionLocal() as db:
+            db_session = await get_session(db, session_token)
+            if db_session is None:
+                return
+            await record_analysis(
+                db,
+                db_session,
+                code=code,
+                diagnostics=diagnostics,
+                timings=timings,
+                settings=get_settings(),
+            )
+            await db.commit()
+    except Exception:
+        logger.exception(
+            "Failed to persist analysis",
+            extra={"session_id": _session_log_id(session_token)},
+        )
+
+
 def _error(message: str, code: str, sequence: int | None = None) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "type": "error",
@@ -232,26 +259,14 @@ async def handle_code_update(
         # The connection was replaced or a newer snapshot arrived.
         return
 
-    analysis_id = None
-    try:
-        async with AsyncSessionLocal() as db:
-            db_session = await get_session(db, session_token)
-            if db_session is not None:
-                persisted = await record_analysis(
-                    db,
-                    db_session,
-                    code=code,
-                    diagnostics=diagnostics,
-                    timings=stage_timings,
-                    settings=get_settings(),
-                )
-                await db.commit()
-                analysis_id = persisted.id
-    except Exception:
-        logger.exception(
-            "Failed to persist analysis",
-            extra={"session_id": _session_log_id(session_token)},
+    asyncio.create_task(
+        _persist_analysis(
+            session_token,
+            code,
+            diagnostics,
+            stage_timings,
         )
+    )
 
     session.analysis_count += 1
     session.total_analysis_time += elapsed_ms
@@ -301,7 +316,7 @@ async def handle_code_update(
             "stage_timings": stage_timings,
             "timestamp": time.time(),
             "language": language,
-            "analysis_id": analysis_id,
+            "analysis_id": None,
         }
     )
 
