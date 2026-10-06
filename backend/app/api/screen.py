@@ -9,6 +9,7 @@ from app.analysis.pipeline import AnalysisPipeline
 router = APIRouter(prefix="/screen", tags=["screen"])
 
 _pipeline = AnalysisPipeline()
+_vision = ScreenVisionService(get_settings(), _pipeline)
 
 
 @router.post("/analyze")
@@ -39,7 +40,7 @@ async def analyze_screen(
                 "width": max(1, int(region_width)),
                 "height": max(1, int(region_height)),
             }
-        return await ScreenVisionService(settings, _pipeline).analyze(
+        return await _vision.analyze(
             data, language=language, manual_region=manual_region
         )
     except RuntimeError as exc:
