@@ -16,7 +16,8 @@ def test_taxonomy_mapping():
     assert map_rule_to_category("F821") == Category.NAME_UNDEFINED
     assert map_rule_to_category("F401") == Category.QUALITY_UNUSED
     assert map_rule_to_category("E111") == Category.SYNTAX_INDENTATION
-    assert map_rule_to_category("unknown_rule") == Category.SYNTAX_UNEXPECTED_TOKEN
+    assert map_rule_to_category("W293") == Category.QUALITY_STYLE
+    assert map_rule_to_category("unknown_rule") == Category.QUALITY_STYLE
 
 
 def test_compute_fingerprint_stability():
