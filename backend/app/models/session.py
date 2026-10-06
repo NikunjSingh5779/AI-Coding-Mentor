@@ -92,6 +92,7 @@ class CodeAnalysis(Base):
     )
     analysis_type: Mapped[str] = mapped_column(String(50))
     analyzer_name: Mapped[str] = mapped_column(String(100))
+    analysis_time_ms: Mapped[float | None] = mapped_column(nullable=True)
     code_snapshot: Mapped[str | None] = mapped_column(Text, nullable=True)
     code_hash: Mapped[str] = mapped_column(String(64), index=True)
     findings: Mapped[list | dict] = mapped_column(JSON)
