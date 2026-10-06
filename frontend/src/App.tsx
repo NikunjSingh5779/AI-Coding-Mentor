@@ -1,7 +1,7 @@
 /**
  * AI Real-Time Coding Screener - Main Application
  *
- * Phase 1: Real-time analysis pipeline with Monaco editor integration
+ * Phase 2: Real-time static analysis pipeline with Monaco editor integration
  */
 
 import React, { useEffect, useState } from 'react';
@@ -68,18 +68,10 @@ if __name__ == "__main__":
     return () => disconnect();
   }, [connect, disconnect]);
 
-  // Analyze the current editor contents as soon as the socket becomes ready.
-  useEffect(() => {
-    if (connectionStatus === 'connected' && code.trim()) {
-      useAnalysisStore.getState().sendCodeUpdate(code, 'python');
-    }
-  }, [connectionStatus, code]);
-
   // Handle diagnostic selection from panel
   const handleDiagnosticClick = (diagnostic: Diagnostic) => {
     setSelectedDiagnostic(diagnostic);
     // TODO: Jump to line in editor when Monaco ref is available
-    console.log('Selected diagnostic:', diagnostic);
   };
 
   // Connection status styles
@@ -102,6 +94,7 @@ if __name__ == "__main__":
   const errorCount = diagnostics.filter(d => d.severity === 'error').length;
   const warningCount = diagnostics.filter(d => d.severity === 'warning').length;
   const infoCount = diagnostics.filter(d => d.severity === 'info').length;
+  const suspicionCount = diagnostics.filter(d => d.severity === 'suspicion').length;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -186,6 +179,11 @@ if __name__ == "__main__":
                 {infoCount > 0 && (
                   <span className="text-blue-400">
                     {infoCount} suggestion{infoCount !== 1 ? 's' : ''}
+                  </span>
+                )}
+                {suspicionCount > 0 && (
+                  <span className="text-orange-400">
+                    {suspicionCount} suspicion{suspicionCount !== 1 ? 's' : ''}
                   </span>
                 )}
                 {diagnostics.length === 0 && (
