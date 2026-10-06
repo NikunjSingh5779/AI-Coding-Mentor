@@ -36,6 +36,8 @@ async def request_hint(
             analysis=analysis,
             requested_level=request.hint_level,
             allow_solution=request.allow_solution,
+            code=request.code,
+            diagnostic_dicts=request.diagnostics,
         )
     except PermissionError as exc:
         raise HTTPException(403, str(exc)) from exc
