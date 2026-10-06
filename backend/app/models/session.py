@@ -1,226 +1,145 @@
-"""
-Session Model - Data layer for coding sessions
-Following MVC pattern: Models define data structure and business rules
-"""
+"""Persistent entities for sessions, analyses, problems and mentor hints."""
 
-from sqlalchemy import (
-    JSON,
-    Boolean,
-    Column,
-    DateTime,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-)
-from sqlalchemy.orm import relationship
+from __future__ import annotations
+
+from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, Text
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
-from ..core.database import Base
+
+class Base(DeclarativeBase):
+    """Declarative base for the application."""
 
 
 class CodingSession(Base):
-    """Represents a learner's coding session with real-time analysis"""
-
     __tablename__ = "coding_sessions"
 
-    # Primary key
-    id = Column(Integer, primary_key=True, index=True)
-
-    # Session identification
-    user_id = Column(
-        String(255), nullable=False, index=True
-    )  # Future multi-user support
-    session_token = Column(String(255), unique=True, nullable=False, index=True)
-
-    # Session metadata
-    language = Column(String(50), nullable=False, default="python")
-    problem_id = Column(String(255), ForeignKey("problems.id"), nullable=True)
-
-    # Timestamps
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
-    updated_at = Column(
-        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(255), index=True)
+    session_token: Mapped[str] = mapped_column(
+        String(255), unique=True, index=True
     )
-    ended_at = Column(DateTime, nullable=True)
-
-    # Session state
-    is_active = Column(Boolean, default=True, nullable=False)
-    current_code = Column(Text, nullable=True)  # Latest code snapshot
-
-    # Settings and configuration
-    hint_level_preference = Column(Integer, default=1, nullable=False)  # H1-H4
-    screen_mode_enabled = Column(Boolean, default=False, nullable=False)
-    auto_analysis_enabled = Column(Boolean, default=True, nullable=False)
-
-    # Performance metrics
-    total_hints_requested = Column(Integer, default=0, nullable=False)
-    errors_fixed = Column(Integer, default=0, nullable=False)
-    session_duration_minutes = Column(Integer, default=0, nullable=False)
-
-    # JSON fields for flexible data
-    settings = Column(JSON, nullable=True)  # User preferences, UI state
-    metadata = Column(JSON, nullable=True)  # Analytics, debugging info
-
-    # Relationships
-    problem = relationship("Problem", back_populates="sessions")
-    analyses = relationship(
-        "CodeAnalysis", back_populates="session", cascade="all, delete-orphan"
+    language: Mapped[str] = mapped_column(String(50), default="python")
+    problem_id: Mapped[str | None] = mapped_column(
+        ForeignKey("problems.id"), nullable=True
     )
-    hints = relationship(
-        "MentorHint", back_populates="session", cascade="all, delete-orphan"
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    current_code: Mapped[str | None] = mapped_column(Text, nullable=True)
+    hint_level_preference: Mapped[int] = mapped_column(Integer, default=1)
+    screen_mode_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    auto_analysis_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    total_hints_requested: Mapped[int] = mapped_column(Integer, default=0)
+    errors_fixed: Mapped[int] = mapped_column(Integer, default=0)
+    session_duration_minutes: Mapped[int] = mapped_column(Integer, default=0)
+    settings: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    session_metadata: Mapped[dict | None] = mapped_column(
+        "metadata", JSON, nullable=True
     )
 
-    def __repr__(self) -> str:
-        return f"<CodingSession(id={self.id}, user_id={self.user_id}, language={self.language})>"
+    problem: Mapped["Problem | None"] = relationship(
+        back_populates="sessions"
+    )
+    analyses: Mapped[list["CodeAnalysis"]] = relationship(
+        back_populates="session", cascade="all, delete-orphan"
+    )
+    hints: Mapped[list["MentorHint"]] = relationship(
+        back_populates="session", cascade="all, delete-orphan"
+    )
 
 
 class Problem(Base):
-    """Built-in problem bank with test cases for logic error detection"""
-
     __tablename__ = "problems"
 
-    # Primary key
-    id = Column(
-        String(255), primary_key=True
-    )  # e.g., "fibonacci_basic", "palindrome_check"
-
-    # Problem content
-    title = Column(String(500), nullable=False)
-    description = Column(Text, nullable=False)
-    difficulty = Column(
-        String(20), nullable=False
-    )  # "beginner", "intermediate", "advanced"
-    category = Column(
-        String(100), nullable=False
-    )  # "algorithms", "data_structures", etc.
-
-    # Test cases for verification
-    test_cases = Column(
-        JSON, nullable=False
-    )  # [{"input": {...}, "expected": {...}, "description": "..."}]
-    starter_code = Column(Text, nullable=True)  # Optional template
-    solution_code = Column(Text, nullable=True)  # Reference solution
-
-    # Metadata
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
-    updated_at = Column(
-        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    title: Mapped[str] = mapped_column(String(500))
+    description: Mapped[str] = mapped_column(Text)
+    difficulty: Mapped[str] = mapped_column(String(20))
+    category: Mapped[str] = mapped_column(String(100))
+    test_cases: Mapped[list] = mapped_column(JSON)
+    starter_code: Mapped[str | None] = mapped_column(Text, nullable=True)
+    solution_code: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+    times_attempted: Mapped[int] = mapped_column(Integer, default=0)
+    average_completion_time: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
     )
 
-    # Statistics
-    times_attempted = Column(Integer, default=0, nullable=False)
-    average_completion_time = Column(Integer, nullable=True)  # Minutes
-
-    # Relationships
-    sessions = relationship("CodingSession", back_populates="problem")
-
-    def __repr__(self) -> str:
-        return (
-            f"<Problem(id={self.id}, title={self.title}, difficulty={self.difficulty})>"
-        )
+    sessions: Mapped[list[CodingSession]] = relationship(
+        back_populates="problem"
+    )
 
 
 class CodeAnalysis(Base):
-    """Real-time analysis results from parsers, linters, and sandbox execution"""
-
     __tablename__ = "code_analyses"
 
-    # Primary key
-    id = Column(Integer, primary_key=True, index=True)
-
-    # Foreign key
-    session_id = Column(
-        Integer, ForeignKey("coding_sessions.id"), nullable=False, index=True
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    session_id: Mapped[int] = mapped_column(
+        ForeignKey("coding_sessions.id"), index=True
     )
+    analysis_type: Mapped[str] = mapped_column(String(50))
+    analyzer_name: Mapped[str] = mapped_column(String(100))
+    code_snapshot: Mapped[str | None] = mapped_column(Text, nullable=True)
+    code_hash: Mapped[str] = mapped_column(String(64), index=True)
+    findings: Mapped[list | dict] = mapped_column(JSON)
+    severity: Mapped[str] = mapped_column(String(20))
+    is_blocking: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now()
+    )
+    is_resolved: Mapped[bool] = mapped_column(Boolean, default=False)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
-    # Analysis metadata
-    analysis_type = Column(
-        String(50), nullable=False
-    )  # "syntax", "lint", "execution", "logic"
-    analyzer_name = Column(
-        String(100), nullable=False
-    )  # "ast_parser", "pylint", "mypy", "sandbox"
-
-    # Code snapshot
-    code_snapshot = Column(Text, nullable=False)
-    code_hash = Column(String(64), nullable=False, index=True)  # For deduplication
-
-    # Analysis results
-    findings = Column(JSON, nullable=False)  # Structured results from analyzer
-    severity = Column(
-        String(20), nullable=False
-    )  # "info", "warning", "error", "critical"
-    is_blocking = Column(
-        Boolean, default=False, nullable=False
-    )  # Prevents code execution
-
-    # Timestamps
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
-
-    # Status tracking
-    is_resolved = Column(Boolean, default=False, nullable=False)
-    resolved_at = Column(DateTime, nullable=True)
-
-    # Relationships
-    session = relationship("CodingSession", back_populates="analyses")
-    hints = relationship("MentorHint", back_populates="analysis")
-
-    def __repr__(self) -> str:
-        return f"<CodeAnalysis(id={self.id}, type={self.analysis_type}, severity={self.severity})>"
+    session: Mapped[CodingSession] = relationship(back_populates="analyses")
+    hints: Mapped[list["MentorHint"]] = relationship(
+        back_populates="analysis"
+    )
 
 
 class MentorHint(Base):
-    """AI mentor hints with progressive disclosure (H1-H4 levels)"""
-
     __tablename__ = "mentor_hints"
 
-    # Primary key
-    id = Column(Integer, primary_key=True, index=True)
-
-    # Foreign keys
-    session_id = Column(
-        Integer, ForeignKey("coding_sessions.id"), nullable=False, index=True
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    session_id: Mapped[int] = mapped_column(
+        ForeignKey("coding_sessions.id"), index=True
     )
-    analysis_id = Column(
-        Integer, ForeignKey("code_analyses.id"), nullable=True, index=True
+    analysis_id: Mapped[int | None] = mapped_column(
+        ForeignKey("code_analyses.id"), nullable=True, index=True
     )
+    hint_level: Mapped[int] = mapped_column(Integer)
+    hint_category: Mapped[str] = mapped_column(String(100))
+    hint_text: Mapped[str] = mapped_column(Text)
+    hint_type: Mapped[str] = mapped_column(String(50), default="suggestion")
+    llm_provider: Mapped[str] = mapped_column(String(50), default="template")
+    llm_model: Mapped[str] = mapped_column(String(100), default="template")
+    prompt_hash: Mapped[str] = mapped_column(String(64))
+    generation_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    was_helpful: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    user_reaction: Mapped[str | None] = mapped_column(
+        String(32), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now()
+    )
+    shown_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    safety_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    contains_solution: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    # Hint metadata
-    hint_level = Column(Integer, nullable=False)  # 1-4 (H1-H4)
-    hint_category = Column(
-        String(100), nullable=False
-    )  # "syntax", "logic", "style", "performance"
+    session: Mapped[CodingSession] = relationship(back_populates="hints")
+    analysis: Mapped[CodeAnalysis | None] = relationship(back_populates="hints")
 
-    # Hint content
-    hint_text = Column(Text, nullable=False)
-    hint_type = Column(
-        String(50), nullable=False
-    )  # "suggestion", "question", "example", "solution"
 
-    # LLM generation metadata
-    llm_provider = Column(String(50), nullable=False)  # "local", "hosted"
-    llm_model = Column(String(100), nullable=False)
-    prompt_hash = Column(String(64), nullable=False)  # For caching/dedup
-    generation_time_ms = Column(Integer, nullable=True)
-
-    # User interaction
-    was_helpful = Column(Boolean, nullable=True)  # User feedback
-    user_reaction = Column(
-        String(20), nullable=True
-    )  # "helpful", "confusing", "incorrect"
-
-    # Timestamps
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
-    shown_at = Column(DateTime, nullable=True)
-
-    # Safety and quality
-    safety_approved = Column(Boolean, default=False, nullable=False)
-    contains_solution = Column(Boolean, default=False, nullable=False)  # H4 only
-
-    # Relationships
-    session = relationship("CodingSession", back_populates="hints")
-    analysis = relationship("CodeAnalysis", back_populates="hints")
-
-    def __repr__(self) -> str:
-        return f"<MentorHint(id={self.id}, level=H{self.hint_level}, category={self.hint_category})>"
+__all__ = ["Base", "CodeAnalysis", "CodingSession", "MentorHint", "Problem"]
