@@ -4,14 +4,14 @@ A web application that watches learner code as it's written, finds syntax, runti
 
 ## Status
 
-⚠️ **Planning Phase**: Nothing is built yet. This is the core infrastructure setup (Phase 0).
+✅ **Current state: Phase 2 — Fast Static Analysis implemented.** The live MVP is a React/Monaco frontend connected to a FastAPI WebSocket analysis pipeline using Tree-sitter, Python AST checks, and Ruff. Sandbox execution, persistence, LLM mentoring, and screen/OCR capture remain deferred phases.
 
 ## Quick Start
 
 ### Prerequisites
 
 - Docker with Docker Compose
-- Node.js 18+ and pnpm
+- Node.js 24 LTS and pnpm 11
 - Python 3.11+ and uv
 - Git
 - LM Studio (for local LLM)
@@ -35,7 +35,6 @@ A web application that watches learner code as it's written, finds syntax, runti
    ```bash
    cd backend
    uv sync
-   make db-migrate
    ```
 
 4. **Setup frontend:**
@@ -44,10 +43,6 @@ A web application that watches learner code as it's written, finds syntax, runti
    pnpm install
    ```
 
-5. **Build sandbox:**
-   ```bash
-   make sandbox-build
-   ```
 
 ### Development
 
@@ -67,21 +62,21 @@ Visit http://localhost:5173 to access the application.
 
 ## Architecture
 
-- **Backend**: FastAPI + PostgreSQL + async event bus
-- **Frontend**: React + Vite + Monaco Editor + WebSocket client
-- **Sandbox**: Docker containers with hardened policies
-- **LLM**: Switchable (local LM Studio + hosted APIs)
+- **Backend (live)**: FastAPI + WebSocket + Tree-sitter + Python AST + Ruff
+- **Frontend (live)**: React + Vite + Monaco Editor + Zustand + WebSocket client
+- **Database**: PostgreSQL infrastructure is present but persistence is not on the live Phase 2 path
+- **Deferred**: sandboxed execution, LLM mentoring, persistence/learner record, screen/OCR source
 
 ## Available Commands
 
 | Command | Description |
 |---------|-------------|
-| `make check` | Lint, format check, type-check and fast tests |
-| `make test` | Run all unit and integration tests |
+| `make check` | Lint, format check and type-check |
+| `make test` | Run the currently implemented backend and frontend tests |
 | `make db-up` | Start PostgreSQL database |
 | `make dev-backend` | Start backend development server |
 | `make dev-frontend` | Start frontend development server |
-| `make sandbox-build` | Build sandbox Docker images |
+
 
 See the [Dependencies and Commands](docs/06-DEPENDENCIES-AND-COMMANDS.md) document for complete details.
 
@@ -98,10 +93,10 @@ ai-coding-mentor/
 
 ## Safety
 
-- Learner code runs only in hardened Docker containers
-- No raw screen frames stored
-- Secrets redacted before LLM calls
-- Progressive hint system never reveals full solutions
+- The live Phase 2 path performs static analysis only; it does not execute learner code.
+- Sandbox execution is a deferred Phase 3 capability and is not started by the current Compose stack.
+- No screen frames are captured by the live Phase 2 app.
+- Progressive hints/LLM behavior is deferred to Phase 4.
 
 ## Documentation
 
