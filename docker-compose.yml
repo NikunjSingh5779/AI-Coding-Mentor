@@ -21,8 +21,6 @@ services:
     build:
       context: ./sandbox
       dockerfile: Dockerfile
-    ports:
-      - "8100:8100"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
@@ -43,6 +41,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://mentor:password@db:5432/mentor
       SANDBOX_URL: http://sandbox:8100
+      SANDBOX_SECRET: dev-only-change-me
       EXECUTION_ENABLED: "true"
       FEATURE_SCREEN_SOURCE: "false"
       LLM_ENABLED: "true"
