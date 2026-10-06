@@ -19,7 +19,7 @@ export const DiagnosticPanel: React.FC<DiagnosticPanelProps> = ({
   className = '',
 }) => {
   const { diagnostics, lastAnalysisTime, analysisCount, averageAnalysisTime } = useAnalysisStore();
-  const [filter, setFilter] = useState<'all' | 'error' | 'warning' | 'info'>('all');
+  const [filter, setFilter] = useState<'all' | 'error' | 'warning' | 'info' | 'suspicion'>('all');
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Filter diagnostics based on selected severity
@@ -32,7 +32,7 @@ export const DiagnosticPanel: React.FC<DiagnosticPanelProps> = ({
   const counts = {
     error: diagnostics.filter(d => d.severity === 'error').length,
     warning: diagnostics.filter(d => d.severity === 'warning').length,
-    info: diagnostics.filter(d => d.severity === 'info').length,
+    info: diagnostics.filter(d => d.severity === 'info').length,\n    suspicion: diagnostics.filter(d => d.severity === 'suspicion').length,
     hint: diagnostics.filter(d => d.severity === 'hint').length,
   };
 
@@ -133,6 +133,18 @@ export const DiagnosticPanel: React.FC<DiagnosticPanelProps> = ({
               }`}
             >
               Info ({counts.info})
+            </button>
+          )}
+          {counts.suspicion > 0 && (
+            <button
+              onClick={() => setFilter('suspicion')}
+              className={`px-2 py-1 text-xs rounded transition-colors ${
+                filter === 'suspicion'
+                  ? 'bg-orange-900 text-orange-200'
+                  : 'text-orange-400 hover:text-orange-200'
+              }`}
+            >
+              Suspicions ({counts.suspicion})
             </button>
           )}
         </div>
