@@ -135,6 +135,43 @@ class TestRedaction:
         assert redact(once) == once
 
 
+class TestFallbackTemplatesNeverCrash:
+    """Regression: an unknown or legacy category name must not raise.
+
+    The frontend forwards categories from the live analyzer (e.g.
+    'line_length'), which are not taxonomy values. A KeyError here surfaced
+    in the browser as a 500 masked as a CORS failure."""
+
+    def test_unknown_category_returns_generic_hint(self):
+        from app.mentor.fallback_explanations import fallback_hint
+
+        text = fallback_hint("totally_unknown_category", 1, message="m", line=3)
+        assert text and "line 3" in text
+
+    def test_legacy_frontend_category_is_aliased(self):
+        from app.mentor.fallback_explanations import fallback_hint, resolve_category
+
+        assert resolve_category("line_length") == "QUALITY_STYLE"
+        assert resolve_category("documentation") == "QUALITY_STYLE"
+        assert resolve_category("undefined_variable") == "NAME_UNDEFINED"
+        text = fallback_hint("line_length", 1, message="Line too long", line=2)
+        assert "line 2" in text
+
+    def test_all_levels_available_for_unknown_category(self):
+        from app.mentor.fallback_explanations import fallback_hint
+
+        for level in (1, 2, 3):
+            assert fallback_hint("mystery", level, message="x", line=1)
+
+    def test_every_taxonomy_category_has_all_three_levels(self):
+        from app.analysis.taxonomy import Category
+        from app.mentor.fallback_explanations import has_template_for
+
+        for cat in Category:
+            for level in (1, 2, 3):
+                assert has_template_for(cat.value, level), f"missing H{level} for {cat.value}"
+
+
 class TestHintLadder:
     def test_progression_h1_to_h3(self):
         from app.mentor.hint_ladder import IssueLadderState

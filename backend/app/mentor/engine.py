@@ -15,7 +15,7 @@ from typing import Any
 from app.config import get_settings
 from app.core.logging import get_logger
 from app.mentor.cache import HintCache, compute_prompt_hash
-from app.mentor.fallback_explanations import fallback_hint
+from app.mentor.fallback_explanations import fallback_hint, resolve_category
 from app.mentor.guardrails import validate_hint, validate_output_schema
 from app.mentor.hint_ladder import IssueLadderState, LadderError
 from app.mentor.llm.base import LLMError, LLMProvider
@@ -114,10 +114,16 @@ class MentorEngine:
                 fp = f"ad-hoc-{len(self._issues)}-{seq}-{len(seen)}"
             rec = self._issues.get(fp)
             if rec is None or rec.resolved:
-                category = getattr(d, "category", None) or (d.get("category", "UNKNOWN") if isinstance(d, dict) else "UNKNOWN")
+                raw_category = (
+                    getattr(d, "category", None)
+                    or (d.get("category", "UNKNOWN") if isinstance(d, dict) else "UNKNOWN")
+                )
+                # Normalise legacy/tool-specific names to a taxonomy value so
+                # hint metadata and templates stay consistent.
+                category = resolve_category(str(raw_category)) or str(raw_category)
                 rec = IssueRecord(
                     issue_id=fp,
-                    category=str(category),
+                    category=category,
                     line=_diag_line(d),
                     message=_diag_message(d)[:200],
                     rule=(getattr(d, "rule", None) or (d.get("rule") if isinstance(d, dict) else None) or ""),

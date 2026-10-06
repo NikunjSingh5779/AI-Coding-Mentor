@@ -118,9 +118,21 @@ def create_app() -> FastAPI:
     @app.exception_handler(Exception)
     async def general_exception_handler(request, exc: Exception):
         logger.exception("Unhandled exception", extra={"path": request.url.path})
+        # Starlette's error middleware sits outside CORSMiddleware, so a 500
+        # would otherwise reach the browser without CORS headers and be
+        # misreported as a CORS failure. Echo the allowed origin explicitly.
+        headers = {}
+        origin = request.headers.get("origin")
+        if origin and origin in settings.cors_origins_list:
+            headers = {
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Credentials": "true",
+                "Vary": "Origin",
+            }
         return JSONResponse(
             status_code=500,
             content={"error": "Internal server error", "type": "internal_error"},
+            headers=headers,
         )
 
     # Include routers

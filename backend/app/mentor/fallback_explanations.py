@@ -137,13 +137,62 @@ _TEMPLATES: dict[str, dict[int, str]] = {
 }
 
 
+# Generic templates: used when a diagnostic carries a category we do not
+# recognise (for example a legacy or tool-specific name). The mentor must
+# never crash on an unknown category — it degrades to a safe, vaguer hint.
+_GENERIC: dict[int, str] = {
+    1: "Something near line {line} doesn't look right. Read that line and the one above it once more.",
+    2: "Analysis flagged an issue around line {line}. Compare that line with a similar one you know works.",
+    3: "Issue near line {line}: {message}. Trace the values involved and check the surrounding lines.",
+}
+
+# Aliases for category names that are not taxonomy values (legacy analyzer
+# output, tool rule names, or OCR-derived labels).
+CATEGORY_ALIASES: dict[str, str] = {
+    "line_length": Category.QUALITY_STYLE.value,
+    "documentation": Category.QUALITY_STYLE.value,
+    "style": Category.QUALITY_STYLE.value,
+    "pep8": Category.QUALITY_STYLE.value,
+    "pep8_naming": Category.QUALITY_STYLE.value,
+    "naming": Category.QUALITY_STYLE.value,
+    "syntax_error": Category.SYNTAX_UNEXPECTED_TOKEN.value,
+    "syntax": Category.SYNTAX_UNEXPECTED_TOKEN.value,
+    "indentation": Category.SYNTAX_INDENTATION.value,
+    "undefined_variable": Category.NAME_UNDEFINED.value,
+    "undefined_name": Category.NAME_UNDEFINED.value,
+    "unused_import": Category.QUALITY_UNUSED.value,
+    "unused_variable": Category.QUALITY_UNUSED.value,
+    "performance": Category.PERF_NESTED_LOOP.value,
+    "complexity": Category.QUALITY_COMPLEXITY.value,
+    "unsupported_language": Category.ENV_UNSUPPORTED.value,
+    "unsupported": Category.ENV_UNSUPPORTED.value,
+    "demo": Category.RUNTIME_OTHER.value,
+}
+
+
+def resolve_category(category: str) -> str | None:
+    """Map an incoming category name to a known template key, if possible."""
+    if category in _TEMPLATES:
+        return category
+    return CATEGORY_ALIASES.get(category) or CATEGORY_ALIASES.get(category.lower())
+
+
 def fallback_hint(category: str, level: int, message: str, line: int, rule: str = "") -> str:
-    """Build a template hint. Raises KeyError for an unknown category."""
-    level_templates = _TEMPLATES[category]
-    template = level_templates.get(level) or level_templates[1]
-    return template.format(message=message, line=line, rule=rule or category.lower())
+    """Build a template hint.
+
+    Never raises: an unrecognised category degrades to a generic template, so
+    the mentor always has something safe to say (H1-H3 only, no code).
+    """
+    resolved = resolve_category(category)
+    level_templates = _TEMPLATES.get(resolved) if resolved else None
+    if level_templates:
+        template = level_templates.get(level) or level_templates[1]
+    else:
+        template = _GENERIC.get(level) or _GENERIC[1]
+    return template.format(message=message, line=line, rule=rule or (resolved or category).lower())
 
 
 def has_template_for(category: str, level: int) -> bool:
-    """True if a template exists for this category at this level."""
-    return category in _TEMPLATES and bool(_TEMPLATES[category].get(level))
+    """True if a specific template exists for this category at this level."""
+    resolved = resolve_category(category)
+    return bool(resolved and _TEMPLATES.get(resolved, {}).get(level))

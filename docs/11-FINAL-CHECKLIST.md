@@ -105,6 +105,9 @@ Tick items only with evidence (command output, test report, ADR). Update this fi
 - [x] Security review: Origin allowlist, WS size limit, hint rate limiting, `pip-audit` clean,
       secret scan (which **found and fixed** a tracked `.env` — now untracked)
 - [x] Accessibility: ARIA labels on mentor/capture controls; keyboard-reachable buttons
+- [ ] Known a11y limitation: Monaco's editor sets `aria-hidden` on its focused mirror
+      textarea, which browsers log as a blocked-aria-hidden warning. This is third-party
+      editor behaviour, not our markup, and needs a Monaco-level workaround or an upstream fix
 - [x] `backend/Dockerfile`, `frontend/Dockerfile`, `frontend/nginx.conf` present
 - [x] Docker/compose builds were **not** executed here (Docker available, image build not run) — limitation
 - [ ] Clean-checkout rehearsal using only the documented commands: **not run** — limitation
