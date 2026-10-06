@@ -7,11 +7,11 @@ over HTTP, keeping Docker privileges out of the API container.
 from __future__ import annotations
 
 import asyncio
+import hmac
+import os
 import tempfile
 import time
 from pathlib import Path
-import hmac
-import os
 
 import docker
 from docker.errors import APIError, DockerException, ImageNotFound
@@ -37,7 +37,8 @@ class ExecutionResult(BaseModel):
     error_type: str | None = None
 
 
-SANDBOX_SECRET = os.getenv('SANDBOX_SECRET', '')
+SANDBOX_SECRET = os.getenv("SANDBOX_SECRET", "")
+
 
 class SandboxRunner:
     def __init__(self) -> None:
@@ -166,8 +167,10 @@ async def execute_code(
     request: ExecutionRequest,
     x_sandbox_secret: str | None = Header(default=None),
 ) -> ExecutionResult:
-    if SANDBOX_SECRET and not hmac.compare_digest(x_sandbox_secret or '', SANDBOX_SECRET):
-        raise HTTPException(401, 'Invalid sandbox credentials')
+    if not SANDBOX_SECRET:
+        raise HTTPException(503, "Sandbox secret is not configured")
+    if not hmac.compare_digest(x_sandbox_secret or "", SANDBOX_SECRET):
+        raise HTTPException(401, "Invalid sandbox credentials")
     return await runner.execute(request)
 
 
