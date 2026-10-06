@@ -1,86 +1,31 @@
-# Development
-FROM python:3.11-slim as development
+# API image for the AI Real-Time Coding Screener.
+# Runs the FastAPI app as a non-root user. Learner code never runs here —
+# it only runs inside the sandbox runner (sandbox/).
+FROM python:3.11-slim AS base
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PIP_NO_CACHE_DIR=1
-ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+# uv for reproducible dependency installs from uv.lock
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Install uv
-RUN pip install uv
-
-# Set work directory
 WORKDIR /app
 
-# Copy dependency files
-COPY pyproject.toml ./
-COPY uv.lock ./
+# Install dependencies first so code changes don't invalidate the layer cache.
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
 
-# Install dependencies
-RUN uv sync --dev
-
-# Copy source code
 COPY . .
 
-# Expose port
-EXPOSE 8000
-
-# Command for development
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-
-# Production
-FROM python:3.11-slim as production
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PIP_NO_CACHE_DIR=1
-ENV PIP_DISABLE_PIP_VERSION_CHECK=1
-ENV APP_ENV=production
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install uv
-RUN pip install uv
-
-# Create non-root user
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-
-# Set work directory
-WORKDIR /app
-
-# Copy dependency files
-COPY pyproject.toml ./
-COPY uv.lock ./
-
-# Install dependencies (production only)
-RUN uv sync --no-dev
-
-# Copy source code
-COPY . .
-
-# Change ownership to appuser
-RUN chown -R appuser:appuser /app
-
-# Switch to non-root user
+# Non-root runtime user (mirrors the sandbox hardening posture).
+RUN useradd --create-home --uid 10001 appuser \
+    && chown -R appuser:appuser /app
 USER appuser
 
-# Expose port
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=2).status == 200 else 1)"
 
-# Command for production
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+CMD ["uv", "run", "--frozen", "--no-dev", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

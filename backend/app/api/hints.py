@@ -8,7 +8,9 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from app.core.limits import hint_rate_limiter
 from app.core.logging import get_logger
+from app.learner.tracking import get_tracker
 from app.mentor.engine import MentorEngine
 from app.mentor.llm.registry import get_llm_provider
 
@@ -44,20 +46,57 @@ def record_analysis_context(session_token: str, code: str, diagnostics: list[dic
     _last_diags[session_token] = diagnostics
 
 
+def _normalize_diagnostics(diagnostics: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Give every diagnostic a stable id.
+
+    The frontend identifies issues as `fingerprint`, falling back to
+    `category:line:column`. We must derive the SAME id here, otherwise the
+    hint ladder would treat each request as a brand-new issue and never
+    progress past H1.
+    """
+    normalized: list[dict[str, Any]] = []
+    for d in diagnostics:
+        item = dict(d)
+        if not item.get("fingerprint") and not item.get("id"):
+            line = item.get("line")
+            if line is None:
+                line = ((item.get("range") or {}).get("start") or {}).get("line", 1)
+            col = item.get("column")
+            if col is None:
+                col = ((item.get("range") or {}).get("start") or {}).get("col", 1)
+            item["fingerprint"] = f"{item.get('category', 'UNKNOWN')}:{line}:{col}"
+        normalized.append(item)
+    return normalized
+
+
 class HintRequestBody(BaseModel):
     issue_id: str
     level: int | None = Field(default=None, ge=1, le=4)
     confirmed: bool = False
+    # The frontend sends the snapshot it already holds so the mentor works on
+    # exactly the code the learner is looking at (no duplicated analysis state).
+    code: str = ""
+    diagnostics: list[dict[str, Any]] = Field(default_factory=list)
 
 
 @router.post("/hints/{session_token}")
 async def request_hint(session_token: str, body: HintRequestBody) -> dict[str, Any]:
     """Request a hint for one issue in this session."""
+    if not hint_rate_limiter.allow(session_token):
+        raise HTTPException(status_code=429, detail="Too many hint requests; slow down.")
+
+    # Prefer the snapshot sent with the request; fall back to the last known one.
+    if body.code or body.diagnostics:
+        record_analysis_context(session_token, body.code, _normalize_diagnostics(body.diagnostics))
     code = _last_code.get(session_token, "")
     diagnostics = _last_diags.get(session_token, [])
 
-    # The issue must exist in the current context (prevents hinting on stale ids).
+    # Track the issues in this snapshot so the ladder has state to advance,
+    # and feed the learner record (progress/history read from the tracker).
     engine = get_engine()
+    engine.track_issues(seq=0, diagnostics=diagnostics)
+    get_tracker(session_token).observe_diagnostics(diagnostics)
+
     known = {d.get("fingerprint") or d.get("id") for d in diagnostics}
     if body.issue_id not in known and body.issue_id not in engine._issues:
         raise HTTPException(status_code=404, detail="Issue not found in the current snapshot")
@@ -74,6 +113,9 @@ async def request_hint(session_token: str, body: HintRequestBody) -> dict[str, A
 
     if hint is None:
         return {"hint": None, "notice": notice, "latency_ms": latency_ms}
+
+    # Count the hint against the issue so progress/history reflect real usage.
+    get_tracker(session_token).record_hint_shown(body.issue_id, hint.level)
 
     return {
         "hint": hint.model_dump(),

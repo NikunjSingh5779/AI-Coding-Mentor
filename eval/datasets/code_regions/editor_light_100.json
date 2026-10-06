@@ -1,0 +1,11 @@
+{
+  "image": "editor_light_100.png",
+  "ground_truth_region": {
+    "x": 160,
+    "y": 90,
+    "w": 950,
+    "h": 620
+  },
+  "theme": "light",
+  "scale": 1.0
+}

@@ -1,0 +1,4 @@
+{
+  "image": "editor_dark_100.png",
+  "ground_truth_text": "def fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n - 1) + fibonacci(n - 2)\n\ndef main():\n    number = 10\n    result = fibonacci(number)\n    print(f\"Fibonacci of {number} is {result}\")\n\nif __name__ == \"__main__\":\n    main()\ndef fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n - 1) + fibonacci(n - 2)\n\ndef main():\n    number = 10\n    result = fibonacci(number)\n    print(f\"Fibonacci of {number} is {result}\")\n\nif __name__ == \"__main__\":\n    main()"
+}

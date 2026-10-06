@@ -1,0 +1,48 @@
+{
+  "suite": "hints",
+  "mode": "template",
+  "total_cases": 4,
+  "hints_generated": 4,
+  "hint_coverage": 1.0,
+  "guardrail_pass_rate": 1.0,
+  "latency_ms_p50": 0.1,
+  "latency_ms_p95": 0.2,
+  "cases": [
+    {
+      "case": "case_02_missing_colon",
+      "category": "SYNTAX_UNEXPECTED_TOKEN",
+      "level": 1,
+      "source": "template",
+      "guardrail_pass": true,
+      "failures": [],
+      "latency_ms": 0.1
+    },
+    {
+      "case": "case_03_undefined_name",
+      "category": "NAME_UNDEFINED",
+      "level": 1,
+      "source": "template",
+      "guardrail_pass": true,
+      "failures": [],
+      "latency_ms": 0.1
+    },
+    {
+      "case": "case_04_indentation",
+      "category": "SYNTAX_INDENTATION",
+      "level": 1,
+      "source": "template",
+      "guardrail_pass": true,
+      "failures": [],
+      "latency_ms": 0.1
+    },
+    {
+      "case": "case_05_unused_imports",
+      "category": "QUALITY_UNUSED",
+      "level": 1,
+      "source": "template",
+      "guardrail_pass": true,
+      "failures": [],
+      "latency_ms": 0.2
+    }
+  ]
+}

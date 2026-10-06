@@ -1,0 +1,15 @@
+{
+  "suite": "screen",
+  "regions": {
+    "cases": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "mean_iou": 0.996
+  },
+  "ocr": {
+    "cases": 4,
+    "usable_after_gate": 4,
+    "line_accuracy": 0.99,
+    "cer": 0.092
+  }
+}

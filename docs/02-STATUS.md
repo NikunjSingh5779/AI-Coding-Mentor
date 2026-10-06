@@ -1,75 +1,92 @@
 # 02 — Project Status
 
-**Current Status:** Phase 3 Complete ✅ — Ready for Phase 4  
-**Last Updated:** 2026-10-05  
-**Branch:** `phase/3-sandbox-execution`
+**Current Status:** Phases 0–9 Complete — release candidate  
+**Last Updated:** 2026-10-06  
+**Branch:** `phase/4-mentor-engine` (phase work committed and tagged `phase-4-complete` … `phase-7-complete`; PH9 hardening in the release commit)
 
-## ✅ Phase 0 Achievements
+## ✅ Phase 0 — Decisions and scaffold
 
-**Toolchain Established**
-- Backend: FastAPI + uv dependencies (32 packages) installed and locked
-- Frontend: React + Vite + TypeScript + pnpm build passing (`✓ 1024 modules transformed`)
-- Database: PostgreSQL 15 container healthy on port 5433
-- WebSocket: Full implementation with session management
+- FastAPI + uv backend, React + Vite + TypeScript frontend, PostgreSQL 15 container (host port 5433)
+- CI workflow, Makefile task runner, `.env.example`, ADRs for Q1–Q7
 
-## ✅ Phase 1 Achievements
+## ✅ Phase 1 — Walking skeleton
 
-**Real-Time Analysis Pipeline**
-- Enhanced Python Analyzer with syntax and semantic diagnostics
-- WebSocket Real-Time Pipeline with session management and coalescing
-- Monaco Code Editor and Diagnostic Panels connected via Zustand state
-- Performance: <1s end-to-end latency from keystroke to diagnostic display
+- WebSocket pipeline with session management, coalescing and heartbeat
+- Monaco editor + diagnostics panel wired through Zustand
 
-## ✅ Phase 2 Achievements
+## ✅ Phase 2 — Fast static analysis
 
-**Fast Static Analysis Pipeline**
-- **Taxonomy Mapping (`backend/app/analysis/taxonomy.py`)**
-  - Mapped 23 fine-grained mistake categories across 8 groups
-- **Diagnostics Aggregator (`backend/app/analysis/aggregator.py`)**
-  - Content-aware stable hashing and deduplication per line/token
-- **Tree-sitter Parser & Error Extraction (`backend/app/analysis/treesitter/`)**
-  - Error-tolerant AST parsing with grammar registry
-- **Standard Library AST Parser (`backend/app/analysis/python_ast.py`)**
-  - Safe syntax checking without code execution
-- **Ruff Linter Subprocess Wrapper (`backend/app/analysis/linters/ruff_python.py`)**
-  - Stdin streaming and JSON output parsing
-- **Evaluation Suite (`eval/`)**
-  - Labeled dataset of clean and buggy snippets (`eval/datasets/code_bugs/`)
-  - 100% precision & recall on benchmark suite; latency P95 ~31ms
+- Taxonomy (23 categories), stable-fingerprint aggregator, Tree-sitter error extraction
+- Python AST syntax analysis, Ruff subprocess wrapper
+- Measured **precision 1.0 / recall 1.0**; **P50 29 ms, P95 33 ms** (`bench_latency.py`)
 
-## ✅ Phase 3 Achievements
+## ✅ Phase 3 — Sandbox and execution
 
-**Sandbox and Execution Pipeline**
-- **Threat Model & Isolation Policy (`sandbox/README.md`, `docs/adr/0006-sandbox-isolation-and-execution.md`)**
-  - Hardened container execution policy (P-08/P-09): non-root (`sandbox:sandbox`, UID 1000), read-only rootfs, in-memory tmpfs `/work`, network disabled (`--network none`), all capabilities dropped (`ALL`), `no-new-privileges:true`, PID limit 64, memory cap 256MB, CPU quota 1.0 core, 64 KB output cap.
-- **Python Sandbox Docker Image (`sandbox/images/python/Dockerfile`)**
-  - Minimal non-root Python 3.11 image stripped of network utilities.
-- **Sandbox Runner Service (`sandbox/runner/app.py`, `policy.py`, `languages.py`)**
-  - Asynchronous FastAPI runner on port 8100 behind shared-secret authentication (`SANDBOX_SECRET`).
-  - Strict concurrency limiter (`max_concurrent_jobs = 2`) returning `429 / runner_busy`.
-  - Base64 tmpfs code injection and in-container process orchestration.
-- **Isolation & Limit Verification (`sandbox/tests/`)**
-  - 9/9 automated isolation and limit tests passing (non-root UID, blocked sockets, read-only rootfs, no Docker socket, infinite loop timeout, memory bomb containment, output truncation, stdin piping, test suite execution).
-- **Backend Execution Engine (`backend/app/execution/`)**
-  - `SandboxClient`: HTTP client with circuit breaker, timeout management, and `EXECUTION_ENABLED` kill switch.
-  - `result_parser.py`: Maps runtime tracebacks and exit codes to taxonomy categories (e.g. `RUNTIME_ZERO_DIVISION`, `RUNTIME_INDEX`, `RUNTIME_TIMEOUT`, `RUNTIME_MEMORY`).
-  - `test_runner.py`: Executes automated test suites while strictly redacting hidden test inputs and expected outputs (Q3 information hiding).
-- **Problem Bank & Seed Challenges (`backend/app/problems/`, `backend/app/api/problems.py`)**
-  - Seed challenges: Two Sum, Fibonacci, Valid Palindrome, FizzBuzz, Valid Parentheses, Reverse Words.
-  - Public problem endpoints and submission execution.
-- **Frontend Execution UI (`frontend/src/features/`)**
-  - `ProblemPanel.tsx`: Interactive challenge browser with difficulty badges and sample cases.
-  - `RunPanel.tsx`: Tabbed execution console for single runs, custom stdin, and automated test suite evaluation.
-  - `TestResults.tsx`: Test case pass/fail summary and execution timings.
+- Hardened container policy: non-root UID 1000, read-only rootfs, tmpfs `/work`,
+  `--network none`, all capabilities dropped, PID/memory/CPU/output caps
+- Runner service on 8100 behind a shared secret; 9/9 isolation tests pass
+- Runtime-error → taxonomy mapping; hidden test data never serialised to the client
 
-## 📊 Current Metrics
+## ✅ Phase 4 — Mentor engine
 
-- **Backend tests:** 23/23 passing
-- **Sandbox isolation tests:** 9/9 passing
-- **Evaluation precision / recall:** 1.0 / 1.0 (100% on benchmark cases)
-- **Analysis latency:** P50 ~29ms, P95 ~31ms (<50ms target met)
-- **Frontend build:** Clean production build passing (`✓ 1029 modules transformed`)
+- LLM provider abstraction (OpenAI-compatible adapter + disabled stub + registry)
+- H1–H4 ladder with **no auto-escalation**; H4 needs H3 + explicit request + confirmation
+- Guardrails: no fenced code or solution phrasing at H1–H3, grounding checks, secret redaction
+- Deterministic trigger policy; template fallbacks for every category (works with `LLM_ENABLED=false`)
+- Adversarial tests: prompt injection, leakage, grounding, output schema
+- Hints eval: **guardrail pass rate 100%**
 
-## ⏭️ Next Phase: PH4 — Mentor Engine
+## ✅ Phase 5 — Persistence and learner record
 
-**Scope:** Progressive 4-level hint ladder (H1 orientation to H4 solution reveal), LLM integration (local LM Studio / Ollama + hosted APIs), secret redaction, template fallback explanations, and strict anti-leakage guardrails.
+- Alembic async migrations; **upgrade and downgrade both verified**
+- `LearnerTracker`: issue lifecycle, time-to-resolve, hint counts, checkpoints
+- Privacy: checkpoints redacted; `STORE_CODE_TEXT=false` stores no code at all
+- Repository layer as the only query module; session history + delete-my-data
+
+## ✅ Phase 6 — Analytics, quality, adaptation
+
+- Complexity/nesting and performance-pattern analyzers (thresholds chosen for zero false positives)
+- Rule-based adaptation: recurring-category profile and suggested starting level
+- Progress API + dashboard
+
+## ✅ Phase 7 — Screen source, discovery, tracking, OCR
+
+- Frame validation, multi-signal region detection (text blocks + uniform panes) with a
+  confidence gate, region tracking with reacquisition, manual region override
+- RapidOCR behind a swappable interface; code reconstruction with gutter stripping,
+  indentation recovery and OCR confidence gating
+- Privacy: `FEATURE_SCREEN_SOURCE=false` is a full no-op; low-confidence paths emit
+  **no** diagnostics; frames never persisted, only hashes logged; consent required
+- Measured: **region precision/recall 1.0, mean IoU 0.996; OCR line accuracy 0.99, CER 9.2%**
+
+## ✅ Phase 8 — Additional languages (out of scope, documented)
+
+Q2 resolved to **Python only**, so every gated PH8 deliverable is a no-op.
+See `docs/adr/0007-phase-8-additional-languages-out-of-scope.md`.
+
+## ✅ Phase 9 — Hardening, evaluation, release
+
+- Latency benchmark re-run and recorded; mentor latency measured (template path < 1 ms)
+- Security review: Origin allowlist, WS message-size limit, hint rate limiting,
+  dependency audit (`pip-audit`: clean), secret scan — **which found and fixed a real
+  issue: `.env` was tracked in git and is now untracked**
+- Accessibility: ARIA labels on mentor/capture controls, keyboard-reachable buttons
+- `backend/Dockerfile`, `frontend/Dockerfile`, `frontend/nginx.conf` for deployment
+- Final `README.md`, demo script, updated checklist
+
+## 📊 Verified metrics (2026-10-06)
+
+| Metric | Value |
+|---|---|
+| Backend tests | 111 passing |
+| Analysis precision / recall | 1.0 / 1.0 |
+| Analysis latency | P50 29.2 ms · P95 32.7 ms |
+| Hint guardrail pass rate | 100% |
+| Region detection | P 1.0 · R 1.0 · IoU 0.996 |
+| OCR reconstruction | line accuracy 0.99 · CER 9.2% |
+| Dependency audit | clean |
+
+**Known limitations:** screen metrics use a synthetic dataset built with a real
+monospace font (real learner screenshots require consent); OCR uses RapidOCR
+because no Tesseract binary is installed here; hidden-test redaction is covered by
+unit tests rather than a live sandbox run in this environment.

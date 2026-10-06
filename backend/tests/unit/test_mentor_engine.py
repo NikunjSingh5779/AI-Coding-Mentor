@@ -191,6 +191,32 @@ async def test_cache_hit_skips_llm(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_flat_frontend_diagnostic_shape_keeps_line_and_message(monkeypatch):
+    """Regression: the frontend sends flat dicts (line/column/message), not
+    nested backend Diagnostics. The hint must use the real line and message,
+    not silently default to line 1 with an empty message."""
+    eng = _engine(monkeypatch, provider=FakeProvider(fail=True))
+    flat = [
+        {
+            "category": "SYNTAX_UNEXPECTED_TOKEN",
+            "line": 7,
+            "column": 5,
+            "message": "invalid syntax",
+            "severity": "error",
+            "fingerprint": "SYNTAX_UNEXPECTED_TOKEN:7:5",
+        }
+    ]
+    eng.track_issues(seq=1, diagnostics=flat)
+    rec = eng._issues["SYNTAX_UNEXPECTED_TOKEN:7:5"]
+    assert rec.line == 7
+    assert rec.message == "invalid syntax"
+
+    hint, _ = await eng.generate_hint("SYNTAX_UNEXPECTED_TOKEN:7:5", None, "def f(\n", flat)
+    assert hint is not None
+    assert "line 7" in hint.text
+
+
+@pytest.mark.asyncio
 async def test_hint_text_is_redacted(monkeypatch):
     eng = _engine(monkeypatch, provider=FakeProvider(text='{"hint": "Your key sk-abcdefghijklmnopqrst looks leaked."}'))
     eng.track_issues(1, [_diag()])

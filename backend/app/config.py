@@ -4,9 +4,20 @@ Uses Pydantic settings for type-safe environment variable handling.
 """
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings
+
+# The project keeps its .env at the repository root, while the backend runs
+# with backend/ as the working directory. Resolve both explicitly; the root
+# file takes precedence when both exist.
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_REPO_ROOT = _BACKEND_DIR.parent
+_ENV_FILES = (
+    str(_BACKEND_DIR / ".env"),
+    str(_REPO_ROOT / ".env"),
+)
 
 
 class Settings(BaseSettings):
@@ -17,10 +28,18 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", description="Logging level")
 
     # CORS
-    cors_origins: list[str] = Field(
-        default=["http://localhost:3000", "http://localhost:5173"],
-        description="Allowed CORS origins for frontend",
+    # Stored as a comma-separated string so the documented .env form
+    # (`CORS_ORIGINS=a,b`) works without JSON escaping. Use the
+    # `cors_origins_list` property wherever a list is needed.
+    cors_origins: str = Field(
+        default="http://localhost:3000,http://localhost:5173",
+        description="Comma-separated allowed CORS origins for the frontend",
     )
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Allowed origins as a list."""
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
     # Features
     feature_screen_source: bool = Field(
@@ -108,9 +127,13 @@ class Settings(BaseSettings):
     )
 
     class Config:
-        env_file = ".env"
+        env_file = _ENV_FILES
         env_file_encoding = "utf-8"
         case_sensitive = False
+        # The shared .env is a documented superset: it also holds variables for
+        # the sandbox runner and other tooling. Unknown keys must not stop the
+        # API from starting.
+        extra = "ignore"
 
 
 @lru_cache

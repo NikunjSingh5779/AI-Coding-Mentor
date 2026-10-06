@@ -193,6 +193,13 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
+def _max_message_bytes() -> int:
+    """Read the configured WS message size limit (P-10)."""
+    from app.config import get_settings
+
+    return get_settings().ws_max_message_size
+
+
 async def websocket_endpoint(websocket: WebSocket, session_token: str = "anonymous") -> None:
     """
     Enhanced WebSocket endpoint for real-time code analysis sessions.
@@ -235,6 +242,15 @@ async def websocket_endpoint(websocket: WebSocket, session_token: str = "anonymo
                 await websocket.send_json({
                     "type": "ping",
                     "timestamp": time.time()
+                })
+                continue
+
+            # Enforce the message size limit before parsing (P-10).
+            if len(raw_message) > _max_message_bytes():
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Message too large",
+                    "code": "MESSAGE_TOO_LARGE"
                 })
                 continue
 

@@ -283,7 +283,7 @@ if __name__ == "__main__":
                     </button>
                   </div>
                   <div className="flex-1 min-h-0 p-2">
-                    <MentorPanel />
+                    <MentorPanel code={code} />
                   </div>
                 </div>
 

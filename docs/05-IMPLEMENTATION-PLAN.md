@@ -1,5 +1,10 @@
 # 05 — Implementation Plan
 
+> **Execution status (2026-10-06):** PH0–PH7 and PH9 are **implemented, tested and verified**.
+> PH8 is a documented no-op (Q2 = Python only, ADR-0007). Per-phase evidence and the
+> remaining limitations are in `11-FINAL-CHECKLIST.md`; measured numbers are in
+> `02-STATUS.md` and the README.
+
 Ten phases, built one at a time. Each phase lists the files it creates (generated from the manifest in `04-FOLDER-STRUCTURE.md`), its steps, how to verify it, when it is done and how to roll it back. **Nothing in this plan has been started.** Phases PH1 onward wait for your answers to Q1–Q7 and your "start Phase N".
 
 ## 1. How to use this plan

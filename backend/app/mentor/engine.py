@@ -28,6 +28,14 @@ logger = get_logger(__name__)
 
 def _diag_line(d: Any) -> int:
     """Best-effort line extraction from a Diagnostic-like object or dict."""
+    if isinstance(d, dict):
+        # Flat shape sent by the frontend (line/column) ...
+        if d.get("line"):
+            return int(d["line"])
+        # ... or a nested range (backend Diagnostic shape).
+        start = (d.get("range") or {}).get("start") or {}
+        return int(start.get("line", 1))
+
     line = getattr(d, "line", None)
     if line:
         return int(line)
@@ -35,11 +43,14 @@ def _diag_line(d: Any) -> int:
     start = getattr(rng, "start", None) if rng is not None else None
     if start is not None and getattr(start, "line", None):
         return int(start.line)
-    if isinstance(d, dict):
-        rng = d.get("range") or {}
-        start = rng.get("start") or {}
-        return int(start.get("line", 1))
     return 1
+
+
+def _diag_message(d: Any) -> str:
+    """Message text from either the flat (frontend) or nested (backend) shape."""
+    if isinstance(d, dict):
+        return str(d.get("message_raw") or d.get("message") or "")
+    return str(getattr(d, "message_raw", "") or "")
 
 
 @dataclass
@@ -108,8 +119,8 @@ class MentorEngine:
                     issue_id=fp,
                     category=str(category),
                     line=_diag_line(d),
-                    message=(getattr(d, "message_raw", "") or (d.get("message_raw", "") if isinstance(d, dict) else ""))[:200],
-                    rule=getattr(d, "rule", "") or (d.get("rule", "") if isinstance(d, dict) else "") or "",
+                    message=_diag_message(d)[:200],
+                    rule=(getattr(d, "rule", None) or (d.get("rule") if isinstance(d, dict) else None) or ""),
                     first_seen_seq=seq,
                 )
                 self._issues[fp] = rec

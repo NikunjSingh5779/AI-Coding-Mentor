@@ -8,10 +8,13 @@ import sys
 import time
 from pathlib import Path
 
-# Add backend directory to sys.path
-backend_dir = Path(__file__).resolve().parent.parent.parent / "backend"
-if str(backend_dir) not in sys.path:
-    sys.path.insert(0, str(backend_dir))
+# Add backend and eval directories to sys.path
+root_dir = Path(__file__).resolve().parent.parent.parent
+backend_dir = root_dir / "backend"
+eval_dir = root_dir / "eval"
+for p in (str(backend_dir), str(eval_dir)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 from app.analysis.pipeline import AnalysisPipeline
 from harness.metrics import calculate_percentiles

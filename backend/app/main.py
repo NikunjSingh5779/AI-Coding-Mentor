@@ -37,12 +37,27 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     event_bus = EventBus()
     app.state.event_bus = event_bus
 
+    # Initialize the database pool. A database outage must NOT stop the API:
+    # the session still runs in memory and persistence degrades gracefully
+    # (see the database-stopped drill in docs/08-ROLLBACK-AND-FAILURE-HANDLING.md).
+    try:
+        from app.core.database import close_database, init_database
+
+        await init_database(settings.database_url)
+        app.state.db_ready = True
+    except Exception as exc:  # noqa: BLE001 - degrade instead of crashing on boot
+        app.state.db_ready = False
+        logger.warning(
+            "Database unavailable at startup; running without persistence",
+            extra={"error": str(exc)},
+        )
+
     # Log configuration
     logger.info(
         "Application configured",
         extra={
             "debug": settings.debug,
-            "cors_origins": settings.cors_origins,
+            "cors_origins": settings.cors_origins_list,
             "feature_screen_source": settings.feature_screen_source,
         },
     )
@@ -50,6 +65,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
 
     # Cleanup
+    try:
+        from app.core.database import close_database
+
+        await close_database()
+    except Exception as exc:  # noqa: BLE001 - shutdown must not raise
+        logger.warning("Error closing database", extra={"error": str(exc)})
     logger.info("Shutting down AI Coding Mentor application")
 
 
@@ -72,7 +93,7 @@ def create_app() -> FastAPI:
     # CORS middleware for frontend communication
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins,
+        allow_origins=settings.cors_origins_list,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["*"],

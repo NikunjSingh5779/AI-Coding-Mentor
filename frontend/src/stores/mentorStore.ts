@@ -34,7 +34,13 @@ interface MentorState {
   levelByIssue: Record<string, number>
 
   checkStatus: () => Promise<void>
-  requestHint: (issueId: string, level?: number, confirmed?: boolean) => Promise<void>
+  requestHint: (
+    issueId: string,
+    level?: number,
+    confirmed?: boolean,
+    code?: string,
+    diagnostics?: Array<Record<string, unknown>>,
+  ) => Promise<void>
   dismissNotice: (index: number) => void
   reset: () => void
 }
@@ -65,15 +71,22 @@ export const useMentorStore = create<MentorState>((set, get) => ({
     }
   },
 
-  requestHint: async (issueId, level, confirmed = false) => {
-    const state = get()
+  requestHint: async (issueId, level, confirmed = false, code = '', diagnostics = []) => {
     const sessionToken = 'dev-session'
     set({ pendingIssueId: issueId })
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/hints/${encodeURIComponent(sessionToken)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ issue_id: issueId, level: level ?? null, confirmed }),
+        body: JSON.stringify({
+          issue_id: issueId,
+          level: level ?? null,
+          confirmed,
+          code,
+          // Send the snapshot the learner is looking at: the backend derives the
+          // same issue ids the panel uses (category:line:column).
+          diagnostics,
+        }),
       })
       if (!res.ok) throw new Error(`hint request failed: ${res.status}`)
       const data = await res.json()

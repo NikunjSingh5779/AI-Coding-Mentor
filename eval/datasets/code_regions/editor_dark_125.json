@@ -1,0 +1,11 @@
+{
+  "image": "editor_dark_125.png",
+  "ground_truth_region": {
+    "x": 200,
+    "y": 112,
+    "w": 1187,
+    "h": 775
+  },
+  "theme": "dark",
+  "scale": 1.25
+}

@@ -1,0 +1,72 @@
+{
+  "suite": "fast_static_analysis",
+  "total_cases": 5,
+  "metrics": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "clean_accuracy": 1.0,
+  "case_results": [
+    {
+      "id": "case_01_clean",
+      "is_clean": true,
+      "passed": true,
+      "expected": [],
+      "detected": [],
+      "diagnostics_count": 0
+    },
+    {
+      "id": "case_02_missing_colon",
+      "is_clean": false,
+      "passed": true,
+      "expected": [
+        "SYNTAX_MISSING_TOKEN",
+        "SYNTAX_UNEXPECTED_TOKEN"
+      ],
+      "detected": [
+        "SYNTAX_MISSING_TOKEN",
+        "SYNTAX_UNEXPECTED_TOKEN"
+      ],
+      "diagnostics_count": 3
+    },
+    {
+      "id": "case_03_undefined_name",
+      "is_clean": false,
+      "passed": true,
+      "expected": [
+        "NAME_UNDEFINED"
+      ],
+      "detected": [
+        "NAME_UNDEFINED"
+      ],
+      "diagnostics_count": 1
+    },
+    {
+      "id": "case_04_indentation",
+      "is_clean": false,
+      "passed": true,
+      "expected": [
+        "SYNTAX_INDENTATION",
+        "SYNTAX_UNEXPECTED_TOKEN"
+      ],
+      "detected": [
+        "SYNTAX_INDENTATION",
+        "SYNTAX_UNEXPECTED_TOKEN"
+      ],
+      "diagnostics_count": 2
+    },
+    {
+      "id": "case_05_unused_imports",
+      "is_clean": false,
+      "passed": true,
+      "expected": [
+        "QUALITY_UNUSED"
+      ],
+      "detected": [
+        "QUALITY_UNUSED"
+      ],
+      "diagnostics_count": 2
+    }
+  ]
+}

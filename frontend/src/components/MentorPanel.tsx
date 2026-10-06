@@ -23,7 +23,7 @@ const LEVEL_COLORS: Record<number, string> = {
   4: 'bg-rose-950 text-rose-300 border-rose-800',
 }
 
-export function MentorPanel() {
+export function MentorPanel({ code = '' }: { code?: string }) {
   const { diagnostics } = useAnalysisStore()
   const {
     hints,
@@ -51,17 +51,19 @@ export function MentorPanel() {
     return Math.min(shown + 1, 3)
   }
 
+  const snapshotDiagnostics = () => diagnostics as unknown as Array<Record<string, unknown>>
+
   const handleNextHint = (issueId: string) => {
     const shown = levelByIssue[issueId] ?? 0
     if (shown >= 3) {
       setConfirmingH4(confirmingH4 === issueId ? null : issueId)
     } else {
-      requestHint(issueId, undefined)
+      requestHint(issueId, undefined, false, code, snapshotDiagnostics())
     }
   }
 
   const handleConfirmH4 = (issueId: string) => {
-    requestHint(issueId, 4, true)
+    requestHint(issueId, 4, true, code, snapshotDiagnostics())
     setConfirmingH4(null)
   }
 
