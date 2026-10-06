@@ -131,7 +131,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
 
   sendCodeUpdate: (code: string, language = 'python') => {
     const { wsService, connectionStatus } = get();
-    if (!wsService || connectionStatus !== 'connected') return;
+    if (!wsService) return;
     wsService.sendCodeUpdate(code, language);
     set((state) => ({ messagesSent: state.messagesSent + 1 }));
   },
