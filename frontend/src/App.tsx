@@ -47,10 +47,24 @@ if __name__ == "__main__":
   const [selectedDiagnostic, setSelectedDiagnostic] = useState<Diagnostic | null>(null);
   const [theme, setTheme] = useState<'vs-dark' | 'vs-light'>('vs-dark');
 
+  // Each browser tab gets its own session token so users never evict each other's sockets.
+  const getSessionToken = (): string => {
+    const key = 'ai-coding-mentor-session-token';
+    const existing = sessionStorage.getItem(key);
+    if (existing) return existing;
+
+    const token =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    sessionStorage.setItem(key, token);
+    return token;
+  };
+
   // Auto-connect on component mount
   useEffect(() => {
     if (connectionStatus === 'disconnected') {
-      connect('phase1-demo-session');
+      connect(getSessionToken());
     }
   }, [connectionStatus, connect]);
 
@@ -95,7 +109,7 @@ if __name__ == "__main__":
               </div>
               <div>
                 <h1 className="text-xl font-semibold">Real-Time Coding Screener</h1>
-                <p className="text-sm text-gray-400">Phase 1: Live Analysis Pipeline</p>
+                <p className="text-sm text-gray-400">Live Static Analysis</p>
               </div>
             </div>
 
