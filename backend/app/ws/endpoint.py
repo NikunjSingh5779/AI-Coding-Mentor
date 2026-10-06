@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import time
+from collections import deque
 from dataclasses import dataclass
 from typing import Any
 
@@ -28,6 +29,11 @@ class WebSocketSession:
     language: str = "python"
     analysis_count: int = 0
     total_analysis_time: float = 0.0
+    request_timestamps: deque[float] = None
+
+    def __post_init__(self) -> None:
+        if self.request_timestamps is None:
+            self.request_timestamps = deque()
 
 
 class ConnectionManager:
@@ -37,6 +43,7 @@ class ConnectionManager:
         self._heartbeat_interval = max(5, settings.ws_heartbeat_interval)
         self._max_message_size = max(1024, settings.ws_max_message_size)
         self._heartbeat_task: asyncio.Task[None] | None = None
+        self._analysis_semaphore: asyncio.Semaphore | None = None
 
     async def connect(self, session_token: str, websocket: WebSocket) -> bool:
         origin = websocket.headers.get("origin", "")
@@ -85,6 +92,21 @@ class ConnectionManager:
 
     def get_session(self, session_token: str) -> WebSocketSession | None:
         return self._sessions.get(session_token)
+
+    def allow_analysis(self, session: WebSocketSession) -> bool:
+        limit = max(1, get_settings().max_requests_per_minute)
+        now = time.time()
+        while session.request_timestamps and now - session.request_timestamps[0] >= 60:
+            session.request_timestamps.popleft()
+        if len(session.request_timestamps) >= limit:
+            return False
+        session.request_timestamps.append(now)
+        return True
+
+    def analysis_semaphore(self) -> asyncio.Semaphore:
+        if self._analysis_semaphore is None:
+            self._analysis_semaphore = asyncio.Semaphore(max(1, get_settings().max_concurrent_runs))
+        return self._analysis_semaphore
 
     async def send_json(self, session_token: str, data: dict[str, Any]) -> bool:
         session = self._sessions.get(session_token)
@@ -172,12 +194,17 @@ async def handle_code_update(
     if sequence <= session.sequence_number:
         return
 
+    if not manager.allow_analysis(session):
+        await websocket.send_json(_error("Analysis rate limit exceeded", "RATE_LIMITED", sequence))
+        return
+
     session.sequence_number = sequence
     session.language = language
     session.last_activity = time.time()
 
     started = time.perf_counter()
-    diagnostics, stage_timings = await pipeline.analyze(code, language=language, seq=sequence)
+    async with manager.analysis_semaphore():
+        diagnostics, stage_timings = await pipeline.analyze(code, language=language, seq=sequence)
     elapsed_ms = (time.perf_counter() - started) * 1000
 
     current = manager.get_session(session_token)
