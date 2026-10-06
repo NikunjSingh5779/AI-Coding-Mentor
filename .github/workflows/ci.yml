@@ -94,7 +94,7 @@ jobs:
     - name: Install dependencies
       run: |
         cd frontend
-        pnpm install
+        pnpm install --frozen-lockfile
 
     - name: Lint
       run: |
@@ -180,7 +180,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        npm install -g pnpm
+        npm install -g pnpm@11.8.0
         pip install uv
         cd frontend && pnpm install
         cd ../backend && uv sync
@@ -261,14 +261,5 @@ jobs:
         target: frontend-prod
         push: false
         tags: mentor-frontend:${{ github.sha }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    - name: Build sandbox image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./sandbox/images/python
-        push: false
-        tags: mentor-sandbox-python:${{ github.sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
