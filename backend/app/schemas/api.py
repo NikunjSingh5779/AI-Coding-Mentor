@@ -36,6 +36,8 @@ class ProblemTestRequest(BaseModel):
 class HintRequest(BaseModel):
     session_token: str
     analysis_id: int | None = None
+    code: str = Field(default="", max_length=250_000)
+    diagnostics: list[dict] = Field(default_factory=list)
     hint_level: int | None = Field(default=None, ge=1, le=4)
     allow_solution: bool = False
 
