@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-
+from datetime import datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -108,3 +108,26 @@ async def seed_problems(db: AsyncSession, problems: list[dict]) -> None:
                 )
             )
     await db.flush()
+
+
+
+async def cleanup_expired_sessions(
+    db: AsyncSession,
+    retention_days: int,
+) -> int:
+    """Delete completed sessions older than the configured retention window."""
+
+    if retention_days <= 0:
+        return 0
+    cutoff = datetime.utcnow() - timedelta(days=retention_days)
+    result = await db.execute(
+        select(CodingSession).where(
+            CodingSession.is_active.is_(False),
+            CodingSession.updated_at < cutoff,
+        )
+    )
+    sessions = list(result.scalars())
+    for session in sessions:
+        await db.delete(session)
+    await db.flush()
+    return len(sessions)
