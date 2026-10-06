@@ -103,7 +103,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         },
       });
 
-      return undefined;
     },
     [language, sendCodeUpdate],
   );
