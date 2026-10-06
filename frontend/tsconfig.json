@@ -35,6 +35,6 @@
     "allowUnusedLabels": false,
     "allowUnreachableCode": false
   },
-  "include": ["src/main.tsx", "src/App.tsx"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "build"]
 }
