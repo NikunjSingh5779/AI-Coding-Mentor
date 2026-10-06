@@ -39,7 +39,7 @@ class Settings(BaseSettings):
         default_factory=lambda: ["python_ast", "treesitter", "ruff"]
     )
     enabled_languages: list[str] = Field(
-        default_factory=lambda: ["python", "javascript", "cpp", "java"]
+        default_factory=lambda: ["python", "javascript", "cpp", "java", "c"]
     )
     max_code_bytes: int = 250_000
     max_message_bytes: int = 1_048_576
