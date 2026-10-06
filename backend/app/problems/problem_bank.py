@@ -18,6 +18,7 @@ Examples:
 - fibonacci(10) should return 55""",
         "difficulty": "beginner",
         "category": "algorithms",
+        "entry_function": "fibonacci",
         "starter_code": """def fibonacci(n):
     # TODO: Implement fibonacci sequence
     # Hint: Consider using iteration or recursion
@@ -57,6 +58,7 @@ Examples:
 - is_palindrome("hello") should return False""",
         "difficulty": "beginner",
         "category": "strings",
+        "entry_function": "is_palindrome",
         "starter_code": """def is_palindrome(s):
     # TODO: Check if string is a palindrome
     # Hint: Consider normalizing the string first
@@ -106,6 +108,7 @@ Examples:
 - sum_of_digits(5) should return 5""",
         "difficulty": "beginner",
         "category": "mathematics",
+        "entry_function": "sum_of_digits",
         "starter_code": """def sum_of_digits(n):
     # TODO: Calculate sum of all digits in n
     # Hint: You can convert to string or use modulo arithmetic
@@ -141,6 +144,7 @@ Examples:
 - find_max([42]) should return 42""",
         "difficulty": "beginner",
         "category": "arrays",
+        "entry_function": "find_max",
         "starter_code": """def find_max(numbers):
     # TODO: Find the maximum value without using max()
     # Hint: Iterate through the list and keep track of the largest seen
@@ -195,6 +199,7 @@ Examples:
 - count_vowels("xyz") should return 0""",
         "difficulty": "beginner",
         "category": "strings",
+        "entry_function": "count_vowels",
         "starter_code": """def count_vowels(text):
     # TODO: Count vowels (a, e, i, o, u) case-insensitively
     # Hint: Convert to lowercase and check each character
