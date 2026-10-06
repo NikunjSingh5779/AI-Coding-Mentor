@@ -78,16 +78,26 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
     }
 
     state.wsService?.disconnect();
-    const wsService = new WebSocketService(
+
+    let service: WebSocketService;
+    const isCurrent = () => get().wsService === service;
+
+    service = new WebSocketService(
       getWebSocketUrl(),
       sessionToken,
-      get()._handleMessage,
-      get()._handleStatusChange,
-      get()._handleError,
+      (message) => {
+        if (isCurrent()) get()._handleMessage(message);
+      },
+      (status) => {
+        if (isCurrent()) get()._handleStatusChange(status);
+      },
+      (error) => {
+        if (isCurrent()) get()._handleError(error);
+      },
     );
 
     set({
-      wsService,
+      wsService: service,
       sessionToken,
       lastError: null,
       sequenceNumber: 0,
@@ -101,7 +111,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
       lastAnalysisTime: null,
     });
 
-    wsService.connect();
+    service.connect();
   },
 
   disconnect: () => {
@@ -168,13 +178,3 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => ({
   _handleError: (error) => set({ lastError: error, connectionStatus: 'error' }),
 }));
 
-// Auto-connect on store creation in development
-if ((import.meta as any).env?.DEV) {
-  // Small delay to ensure component mounting
-  setTimeout(() => {
-    const store = useAnalysisStore.getState();
-    if (store.connectionStatus === 'disconnected') {
-      store.connect('dev-session');
-    }
-  }, 100);
-}
