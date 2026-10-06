@@ -62,8 +62,8 @@ async def analytics(
         if item.analysis_type == "tests" and isinstance(item.findings, dict):
             tests_total += int(item.findings.get("test_count", 0))
             tests_passed += int(item.findings.get("passed_count", 0))
-        if isinstance(item.findings, dict):
-            total_analysis_ms += float(item.findings.get("analysis_time_ms", 0))
+        if item.analysis_type == "fast_static":
+            total_analysis_ms += float(item.analysis_time_ms or 0)
 
     return {
         "session_token": session_token,
