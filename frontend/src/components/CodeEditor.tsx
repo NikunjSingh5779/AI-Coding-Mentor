@@ -96,7 +96,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             contents: [
               {
                 value:
-                  `**${diagnostic.severity.toUpperCase()}**${diagnostic.code ? ` (${diagnostic.code})` : ''}: ${diagnostic.message}${diagnostic.fix_suggestion ? `\\n\\n**Suggestion:** ${diagnostic.fix_suggestion}` : ''}`,
+                  `**${diagnostic.severity.toUpperCase()}**${diagnostic.code ? ` (${diagnostic.code})` : ''}: ${diagnostic.message}${diagnostic.fix_suggestion ? `\n\n**Suggestion:** ${diagnostic.fix_suggestion}` : ''}`,
               },
             ],
           };
