@@ -26,6 +26,7 @@ const LANGUAGES = [
   { value: 'javascript', label: 'JavaScript' },
   { value: 'cpp', label: 'C++' },
   { value: 'java', label: 'Java' },
+  { value: 'c', label: 'C' },
 ] as const;
 
 function App() {
