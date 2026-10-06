@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from app.config import get_settings
+from app.core.database import get_db_session
+from app.persistence.service import get_session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.vision.service import ScreenVisionService
 from app.analysis.pipeline import AnalysisPipeline
 
@@ -21,8 +24,11 @@ async def analyze_screen(
     region_top: int | None = Form(default=None),
     region_width: int | None = Form(default=None),
     region_height: int | None = Form(default=None),
+    db: AsyncSession = Depends(get_db_session),
 ) -> dict:
     settings = get_settings()
+    if await get_session(db, session_token) is None:
+        raise HTTPException(404, "Session not found")
     if not settings.feature_screen_source:
         raise HTTPException(403, "Screen source is disabled")
     if not frame.content_type or not frame.content_type.startswith("image/"):
