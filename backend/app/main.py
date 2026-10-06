@@ -17,7 +17,7 @@ from app.api.problems import router as problems_router
 from app.api.screen import router as screen_router
 from app.api.sessions import router as sessions_router
 from app.config import get_settings
-from app.core.database import close_database, get_db_session, init_database
+from app.core.database import close_database, init_database
 from app.core.errors import AppError
 from app.core.events import EventBus
 from app.core.logging import get_logger, setup_logging
