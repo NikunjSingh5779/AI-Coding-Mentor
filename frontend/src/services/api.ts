@@ -42,8 +42,15 @@ export async function sendHintFeedback(sessionToken: string, hintId: number, was
   return request<{ recorded: boolean }>('/api/v1/mentor/hint/' + hintId + '/feedback', { method: 'POST', body: JSON.stringify({ session_token: sessionToken, was_helpful: wasHelpful, reaction: reaction ?? null }) });
 }
 export async function getAnalytics(sessionToken: string): Promise<Analytics> { return request<Analytics>('/api/v1/analytics/' + encodeURIComponent(sessionToken)); }
-export async function analyzeScreen(sessionToken: string, blob: Blob, language = 'python') {
-  const form = new FormData(); form.append('frame', blob, 'screen.jpg');
+export async function analyzeScreen(sessionToken: string, blob: Blob, language = 'python', region?: { left: number; top: number; width: number; height: number }) {
+  const form = new FormData();
+  form.append('frame', blob, 'screen.jpg');
+  if (region) {
+    form.append('region_left', String(region.left));
+    form.append('region_top', String(region.top));
+    form.append('region_width', String(region.width));
+    form.append('region_height', String(region.height));
+  }
   const url = API_BASE + '/api/v1/screen/analyze?session_token=' + encodeURIComponent(sessionToken) + '&language=' + encodeURIComponent(language);
   const response = await fetch(url, { method: 'POST', body: form });
   if (!response.ok) throw new Error((await response.text()) || 'Screen analysis failed');
