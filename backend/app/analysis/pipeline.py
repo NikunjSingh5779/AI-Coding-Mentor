@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from collections.abc import Callable
 from typing import Any
 
 from app.analysis.aggregator import DiagnosticsAggregator
@@ -11,6 +12,7 @@ from app.analysis.linters.ruff_python import RuffPythonLinter
 from app.analysis.python_ast import analyze_python_ast
 from app.analysis.treesitter.errors import extract_treesitter_diagnostics
 from app.config import get_settings
+from app.schemas.diagnostic import Diagnostic
 
 
 class AnalysisPipeline:
@@ -68,7 +70,9 @@ class AnalysisPipeline:
         return aggregated, timings
 
     @staticmethod
-    def _timed(func, *args):
+    def _timed(
+        func: Callable[..., list[Diagnostic]], *args: Any
+    ) -> tuple[list[Diagnostic], float]:
         started = time.perf_counter()
         result = func(*args)
         return result, (time.perf_counter() - started) * 1000
