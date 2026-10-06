@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     # Execution / sandbox
     execution_enabled: bool = True
     sandbox_url: str = "http://localhost:8100"
+    sandbox_secret: str = "change-me-sandbox-secret"
     sandbox_timeout: int = 30
     sandbox_max_timeout: int = 60
     sandbox_max_output_bytes: int = 1_048_576
