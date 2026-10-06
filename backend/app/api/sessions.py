@@ -6,10 +6,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
 from app.core.database import get_db_session
 from app.models.session import CodingSession, CodeAnalysis, MentorHint
 from app.schemas.api import CreateSessionRequest, SessionResponse
 from app.persistence.service import get_session
+from app.problems.problem_bank import get_problem
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -19,11 +21,19 @@ async def create_session(
     request: CreateSessionRequest,
     db: AsyncSession = Depends(get_db_session),
 ) -> SessionResponse:
+    settings = get_settings()
+    language = request.language.lower().strip()
+    allowed = {item.lower() for item in settings.enabled_languages}
+    if language not in allowed:
+        raise HTTPException(400, f"Unsupported language: {language}")
+    if request.problem_id is not None and get_problem(request.problem_id) is None:
+        raise HTTPException(404, "Problem not found")
+
     token = secrets.token_urlsafe(32)
     session = CodingSession(
         user_id=request.user_id,
         session_token=token,
-        language=request.language.lower(),
+        language=language,
         problem_id=request.problem_id,
         is_active=True,
     )
