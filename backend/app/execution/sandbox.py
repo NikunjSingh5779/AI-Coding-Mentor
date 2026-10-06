@@ -15,6 +15,7 @@ class SandboxClient:
         base_url: str,
         timeout: float = 65.0,
         max_code_bytes: int = 250_000,
+        secret: str = "",
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
