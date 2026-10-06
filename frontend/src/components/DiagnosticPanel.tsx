@@ -47,6 +47,8 @@ export const DiagnosticPanel: React.FC<DiagnosticPanelProps> = ({
         return <span className="px-2 py-0.5 text-xs bg-blue-900 text-blue-200 rounded">Info</span>;
       case 'hint':
         return <span className="px-2 py-0.5 text-xs bg-purple-900 text-purple-200 rounded">Hint</span>;
+      case 'suspicion':
+        return <span className="px-2 py-0.5 text-xs bg-orange-900 text-orange-200 rounded">Suspicion</span>;
       default:
         return null;
     }
@@ -62,6 +64,8 @@ export const DiagnosticPanel: React.FC<DiagnosticPanelProps> = ({
         return <span className="text-blue-400">ℹ</span>;
       case 'hint':
         return <span className="text-purple-400">💡</span>;
+      case 'suspicion':
+        return <span className="text-orange-400">?</span>;
       default:
         return null;
     }
