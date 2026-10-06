@@ -33,6 +33,7 @@ class SandboxClient:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(
                     f"{self.base_url}/execute",
+                    headers={"X-Sandbox-Secret": self.secret},
                     json={
                         "code": code,
                         "language": language,
