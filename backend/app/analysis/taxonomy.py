@@ -164,8 +164,22 @@ RUFF_RULE_MAPPING: Dict[str, Category] = {
 }
 
 
-def map_rule_to_category(rule: Optional[str], default: Category = Category.SYNTAX_UNEXPECTED_TOKEN) -> Category:
-    """Map a tool rule string to a Category."""
+def map_rule_to_category(
+    rule: Optional[str],
+    default: Category = Category.QUALITY_STYLE,
+) -> Category:
+    """Map a tool rule string to a taxonomy category without inventing syntax errors."""
     if not rule:
         return default
-    return RUFF_RULE_MAPPING.get(rule, default)
+
+    explicit = RUFF_RULE_MAPPING.get(rule)
+    if explicit is not None:
+        return explicit
+
+    # Unknown Ruff rules are still linter findings. Treat E/W/N/F families
+    # as quality findings rather than syntax failures; parser-level E999 is
+    # explicitly mapped above.
+    if rule.startswith(("E", "W", "N", "F")):
+        return Category.QUALITY_STYLE
+
+    return default
