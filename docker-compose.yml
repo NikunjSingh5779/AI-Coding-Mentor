@@ -13,7 +13,6 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mentor"]
       interval: 30s
@@ -28,25 +27,14 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://mentor:password@db:5432/mentor
-      - SANDBOX_URL=http://sandbox:8100
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - ./backend:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      - backend_venv:/app/.venv
+    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-  sandbox:
-    build:
-      context: ./sandbox
-      dockerfile: Dockerfile
-    ports:
-      - "8100:8100"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./sandbox:/app
-    command: uvicorn runner.app:app --host 0.0.0.0 --port 8100 --reload
-    privileged: true
 
   frontend:
     build:
