@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import time
 from collections import deque
@@ -17,6 +18,10 @@ from app.config import get_settings
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+def _session_log_id(session_token: str) -> str:
+    return hashlib.sha256(session_token.encode("utf-8")).hexdigest()[:12]
 
 
 @dataclass
@@ -82,7 +87,7 @@ class ConnectionManager:
             logger.info(
                 "WebSocket disconnected",
                 extra={
-                    "session_token": session_token,
+                    "session_id": _session_log_id(session_token),
                     "analysis_count": session.analysis_count,
                 },
             )
@@ -275,7 +280,7 @@ async def handle_code_update(
 
 
 async def websocket_endpoint(
-    websocket: WebSocket, session_token: str = "anonymous"
+    websocket: WebSocket, session_token: str | None = None
 ) -> None:
     if not session_token or len(session_token) > 128:
         await websocket.close(code=1008, reason="Invalid session token")
