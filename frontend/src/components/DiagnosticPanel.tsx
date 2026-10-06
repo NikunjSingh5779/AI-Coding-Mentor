@@ -32,7 +32,8 @@ export const DiagnosticPanel: React.FC<DiagnosticPanelProps> = ({
   const counts = {
     error: diagnostics.filter(d => d.severity === 'error').length,
     warning: diagnostics.filter(d => d.severity === 'warning').length,
-    info: diagnostics.filter(d => d.severity === 'info').length,\n    suspicion: diagnostics.filter(d => d.severity === 'suspicion').length,
+    info: diagnostics.filter(d => d.severity === 'info').length,
+    suspicion: diagnostics.filter(d => d.severity === 'suspicion').length,
     hint: diagnostics.filter(d => d.severity === 'hint').length,
   };
 
