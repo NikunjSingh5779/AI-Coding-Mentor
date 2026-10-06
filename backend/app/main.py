@@ -102,7 +102,9 @@ def create_app() -> FastAPI:
 
     # WebSocket endpoint for real-time code analysis
     @app.websocket("/ws/code-analysis")
-    async def websocket_code_analysis(websocket: WebSocket, session_token: str = "anonymous"):
+    async def websocket_code_analysis(
+        websocket: WebSocket, session_token: str | None = None
+    ) -> None:
         await websocket_endpoint(websocket, session_token)
 
     return app
