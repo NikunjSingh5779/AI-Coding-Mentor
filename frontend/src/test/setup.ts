@@ -37,18 +37,27 @@ global.IntersectionObserver = vi.fn().mockImplementation(() => ({
 }))
 
 // Mock WebSocket
-global.WebSocket = vi.fn().mockImplementation((url: string) => ({
+const MockWebSocket = vi.fn().mockImplementation((url: string) => ({
   url,
-  readyState: WebSocket.CONNECTING,
-  CONNECTING: 0,
-  OPEN: 1,
-  CLOSING: 2,
-  CLOSED: 3,
+  readyState: MockWebSocket.CONNECTING,
   send: vi.fn(),
   close: vi.fn(),
   addEventListener: vi.fn(),
   removeEventListener: vi.fn(),
+  onopen: null,
+  onmessage: null,
+  onclose: null,
+  onerror: null,
 }))
+
+Object.assign(MockWebSocket, {
+  CONNECTING: 0,
+  OPEN: 1,
+  CLOSING: 2,
+  CLOSED: 3,
+})
+
+global.WebSocket = MockWebSocket as unknown as typeof WebSocket
 
 // Mock URL methods
 global.URL.createObjectURL = vi.fn(() => 'mock-blob-url')
