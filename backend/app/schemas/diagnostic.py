@@ -1,10 +1,6 @@
-"""
-Diagnostic Schema definitions.
-Follows 03-ARCHITECTURE.md section 6.3.
-"""
+"""Canonical diagnostic protocol models."""
 
 from enum import Enum
-from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -26,8 +22,8 @@ class Origin(str, Enum):
 
 
 class Position(BaseModel):
-    line: int = Field(..., ge=1, description="1-indexed line number")
-    col: int = Field(..., ge=1, description="1-indexed column offset")
+    line: int = Field(..., ge=1)
+    col: int = Field(..., ge=1)
 
 
 class DiagnosticRange(BaseModel):
@@ -39,10 +35,10 @@ class Diagnostic(BaseModel):
     id: str
     seq: int = 0
     origin: Origin
-    rule: Optional[str] = None
+    rule: str | None = None
     category: str
     severity: Severity
     message_raw: str
     range: DiagnosticRange
     fingerprint: str
-    confidence: float = 1.0
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
