@@ -54,21 +54,21 @@ function App() {
     let cancelled = false;
 
     const bootstrap = async () => {
-      const stored = sessionStorage.getItem('ai-coding-mentor-session-token');
+      const stored = localStorage.getItem('ai-coding-mentor-session-token');
       let token = stored;
       if (stored) {
         try {
           await getSession(stored);
         } catch {
           token = null;
-          sessionStorage.removeItem('ai-coding-mentor-session-token');
+          localStorage.removeItem('ai-coding-mentor-session-token');
         }
       }
 
       if (!token) {
         const created = await createSession('local-user', language);
         token = created.session_token;
-        sessionStorage.setItem('ai-coding-mentor-session-token', token);
+        localStorage.setItem('ai-coding-mentor-session-token', token);
       }
 
       if (!cancelled) {
