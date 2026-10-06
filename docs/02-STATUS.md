@@ -1,55 +1,50 @@
-# 02 — Project Status
+# Project Status
 
-**Current Status:** Phase 2 Complete ✅ — Ready for Phase 3  
-**Last Updated:** 2026-10-07  
+**Current status:** Feature-complete local MVP across PH0–PH9.  
+**Last updated:** 2026-10-07  
 **Branch:** `main`
 
-## ✅ Phase 0 Achievements
+## Phase completion
 
-**Toolchain Established**
-- Backend: FastAPI + uv dependencies (32 packages) installed and locked
-- Frontend: React + Vite + TypeScript + pnpm build passing (`✓ 1024 modules transformed`)
-- Database: PostgreSQL 15 container healthy on port 5433
-- WebSocket: Full implementation with session management
+| Phase | Scope | Status |
+|---|---|---|
+| PH0 | Toolchain, Docker/Compose, configuration, CI | ✅ |
+| PH1 | Monaco + WebSocket live analysis lifecycle | ✅ |
+| PH2 | AST + Tree-sitter + Ruff + taxonomy + aggregation | ✅ |
+| PH3 | Dedicated sandbox + Python/JS/C++/Java execution + tests | ✅ |
+| PH4 | Progressive mentor, local/hosted OpenAI-compatible LLM, fallback and H4 gating | ✅ |
+| PH5 | Sessions, analyses, hints, retention and privacy-by-default persistence | ✅ |
+| PH6 | Analytics and transparent hint adaptation | ✅ |
+| PH7 | Browser screen capture, OCR, confidence gating, tracking and manual region | ✅ |
+| PH8 | JavaScript, C++, Java and C execution paths; Python remains richest static-analysis path | ✅ |
+| PH9 | Hardening, Docker secret exclusion, CI/browser/sandbox tests, docs and desktop overlay | ✅ |
 
-## ✅ Phase 1 Achievements
+## Important implementation notes
 
-**Real-Time Analysis Pipeline**
-- Enhanced Python Analyzer with syntax and semantic diagnostics
-- WebSocket Real-Time Pipeline with session management and coalescing
-- Monaco Code Editor and Diagnostic Panels connected via Zustand state
-- Performance: <1s end-to-end latency from keystroke to diagnostic display
+- The live editor path uses a single canonical diagnostic protocol.
+- Real-time analysis is asynchronous and sequence-safe.
+- Persistence is decoupled from WebSocket response latency.
+- Code text is not stored by default; only hashes/findings/metrics are persisted.
+- The sandbox runner is the only component with the Docker socket.
+- The in-app floating mentor is always available when `FLOATING_MENTOR_ENABLED=true`.
+- The desktop overlay is an optional companion under `desktop_overlay/`.
+- Screen source is opt-in and defaults to false.
+- Low-confidence screen regions yield no diagnostics.
+- H1–H3 avoid complete solutions; H4 requires explicit confirmation.
+- If the LLM is unavailable, deterministic template hints keep mentoring functional.
 
-## ✅ Phase 2 Achievements
+## Verification status
 
-**Fast Static Analysis Pipeline**
-- **Taxonomy Mapping (`backend/app/analysis/taxonomy.py`)**
-  - Mapped 23 fine-grained mistake categories across 8 groups (syntax, name, type, runtime, logic, quality, performance, environment)
-  - Tool-agnostic rule code translation (Ruff, Pyflakes, pycodestyle)
-- **Diagnostics Aggregator (`backend/app/analysis/aggregator.py`)**
-  - Content-aware stable hashing and deduplication per line/token
-  - Severity-based ranking and conflict resolution
-- **Tree-sitter Parser & Error Extraction (`backend/app/analysis/treesitter/`)**
-  - Error-tolerant AST parsing with grammar registry
-  - Precise ERROR and MISSING node diagnostic extraction
-- **Standard Library AST Parser (`backend/app/analysis/python_ast.py`)**
-  - Safe syntax checking without code execution
-  - Pathological input size limits and error localization
-- **Ruff Linter Subprocess Wrapper (`backend/app/analysis/linters/ruff_python.py`)**
-  - Stdin streaming and JSON output parsing
-  - Subprocess timeout containment (2.0s max)
-- **Fast-Path Pipeline Orchestrator (`backend/app/analysis/pipeline.py`)**
-  - Asynchronous parallel execution across thread pools
-  - Stage-level timing breakdown (<50ms typical runtime)
-- **Evaluation Suite (`eval/`)**
-  - Labeled dataset of clean and buggy snippets (`eval/datasets/code_bugs/`)
-  - Accuracy and precision/recall evaluation harness and latency benchmark are present
-  - Historical benchmark numbers below are retained as prior evidence; they have not been re-run on the post-audit branch
+Automated regression tests have been added for:
+- diagnostic normalization
+- stale WebSocket results
+- screen diagnostic normalization
+- sandbox policy
+- Docker sandbox network/filesystem isolation
+- browser workspace smoke loading
 
-## 📊 Evidence / Metrics
+This environment cannot honestly certify a fresh Docker/Node execution of the final commit, so CI remains the authoritative clean-checkout verification.
 
-The repository contains prior Phase 2 benchmark evidence (including 13/13 backend tests, 100% benchmark precision/recall, and sub-50ms latency). The post-audit branch has not been re-executed in a clean external runner in this environment, so those figures should be treated as historical until CI confirms the current commit.
+## Remaining production hardening
 
-## ⏭️ Next Phase: PH3 — Sandbox and Execution
-
-**Scope:** Safe containerized execution of untrusted learner code and test cases.
+The sandbox runner has Docker socket access by design for this local MVP. For a public multi-tenant deployment, move execution into a stronger isolation boundary such as dedicated worker VMs/rootless isolated runtimes, and add authenticated user identity instead of bearer session tokens alone.
