@@ -64,7 +64,4 @@ Thumbs.db
 .github/
 
 # Other
-README.md
-LICENSE
-Makefile
 alembic.ini
