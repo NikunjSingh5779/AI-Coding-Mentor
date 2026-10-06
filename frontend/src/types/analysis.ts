@@ -8,7 +8,7 @@ export interface Diagnostic {\n  id?: string;\n  seq?: number;
   end_line?: number | null;
   end_column?: number | null;
   message: string;
-  severity: 'error' | 'warning' | 'info' | 'hint';
+  severity: 'error' | 'warning' | 'info' | 'hint' | 'suspicion';
   source: string;
   category: string;
   code?: string | null;
