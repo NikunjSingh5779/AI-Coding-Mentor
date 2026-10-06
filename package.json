@@ -1,7 +1,7 @@
 {
   "name": "ai-coding-mentor",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "AI Real-Time Coding Screener - A web app that watches learner code and provides progressive hints",
   "type": "module",
   "scripts": {
@@ -48,7 +48,7 @@
   "packageManager": "pnpm@11.8.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ai-coding-mentor/ai-coding-mentor.git"
+    "url": "https://github.com/NikunjSingh5779/AI-Coding-Mentor.git"
   },
   "license": "MIT",
   "authors": [
