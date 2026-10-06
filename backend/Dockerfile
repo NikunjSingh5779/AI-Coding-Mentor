@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     git \
+    tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv
@@ -22,8 +23,6 @@ WORKDIR /app
 
 # Copy dependency files
 COPY pyproject.toml ./
-COPY uv.lock ./
-
 # Install dependencies
 RUN uv sync --dev
 
@@ -61,8 +60,6 @@ WORKDIR /app
 
 # Copy dependency files
 COPY pyproject.toml ./
-COPY uv.lock ./
-
 # Install dependencies (production only)
 RUN uv sync --no-dev
 
