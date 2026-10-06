@@ -20,8 +20,10 @@
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module",
-    "project": ["./tsconfig.json", "./tsconfig.node.json"],
-    "tsconfigRootDir": "__dirname"
+    "project": [
+      "./tsconfig.json",
+      "./tsconfig.node.json"
+    ]
   },
   "plugins": [
     "react-refresh",
@@ -53,7 +55,10 @@
     "no-console": [
       "warn",
       {
-        "allow": ["warn", "error"]
+        "allow": [
+          "warn",
+          "error"
+        ]
       }
     ],
     "prefer-const": "error",
