@@ -11,7 +11,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN npm install -g pnpm
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --frozen-lockfile
 
 # Copy source code
 COPY . .
@@ -23,12 +23,12 @@ EXPOSE 5173
 CMD ["pnpm", "dev", "--host"]
 
 # Frontend Production Build
-FROM node:18-alpine as frontend-build
+FROM node:24-alpine as frontend-build
 
 WORKDIR /app
 
 # Copy package files
-COPY frontend/package.json frontend/pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml ./
 
 # Install pnpm
 RUN npm install -g pnpm
@@ -37,7 +37,7 @@ RUN npm install -g pnpm
 RUN pnpm install
 
 # Copy source code
-COPY frontend/ .
+COPY . .
 
 # Build application
 RUN pnpm build
@@ -46,7 +46,7 @@ RUN pnpm build
 FROM nginx:alpine as frontend-prod
 
 # Copy custom nginx config
-COPY frontend/nginx.conf /etc/nginx/nginx.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 
 # Copy built assets
 COPY --from=frontend-build /app/dist /usr/share/nginx/html
