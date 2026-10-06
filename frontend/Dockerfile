@@ -51,8 +51,6 @@ COPY frontend/nginx.conf /etc/nginx/nginx.conf
 # Copy built assets
 COPY --from=frontend-build /app/dist /usr/share/nginx/html
 
-# Copy environment template
-COPY frontend/env.template.js /usr/share/nginx/html/env.template.js
 
 # Expose port
 EXPOSE 80
