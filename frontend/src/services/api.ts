@@ -20,6 +20,10 @@ export interface ExecutionResult { success: boolean; stdout: string; stderr: str
 export interface TestResult { passed: boolean; tests: Array<{ description: string; expected: unknown; actual: unknown; passed: boolean; stdout: string; stderr: string; error_type?: string | null }>; test_count: number; passed_count: number; error?: string; }
 export interface Analytics { analyses: number; hints: number; errors_detected: number; errors_fixed: number; execution_runs: number; tests_passed: number; tests_total: number; avg_analysis_ms: number; avg_execution_ms: number; top_categories: Array<{ category: string; count: number }>; }
 
+export async function getSession(sessionToken: string) {
+  return request<{ id: number; session_token: string; user_id: string; language: string; problem_id: string | null; is_active: boolean }>('/api/v1/sessions/' + encodeURIComponent(sessionToken));
+}
+
 export async function createSession(userId = 'local-user', language = 'python', problemId?: string) {
   return request<{ id: number; session_token: string; user_id: string; language: string; problem_id: string | null; is_active: boolean }>('/api/v1/sessions', { method: 'POST', body: JSON.stringify({ user_id: userId, language, problem_id: problemId ?? null }) });
 }
