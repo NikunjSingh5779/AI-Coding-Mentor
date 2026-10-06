@@ -34,20 +34,20 @@ class AnalysisPipeline:
             return [], {"total": 0.0}
 
         loop = asyncio.get_running_loop()
+        started = time.perf_counter()
         tasks: list[asyncio.Future[Any]] = []
         names: list[str] = []
 
         if "python_ast" in enabled or "ast" in enabled:
             names.append("python_ast")
-            tasks.append(loop.run_in_executor(None, lambda: self._timed("python_ast", analyze_python_ast, code, seq)))
+            tasks.append(loop.run_in_executor(None, lambda: self._timed(analyze_python_ast, code, seq)))
         if "treesitter" in enabled:
             names.append("treesitter")
-            tasks.append(loop.run_in_executor(None, lambda: self._timed("treesitter", extract_treesitter_diagnostics, code, language, seq)))
+            tasks.append(loop.run_in_executor(None, lambda: self._timed(extract_treesitter_diagnostics, code, language, seq)))
         if "ruff" in enabled:
             names.append("ruff")
-            tasks.append(loop.run_in_executor(None, lambda: self._timed("ruff", self.ruff_linter.lint, code, "snippet.py", seq)))
+            tasks.append(loop.run_in_executor(None, lambda: self._timed(self.ruff_linter.lint, code, "snippet.py", seq)))
 
-        started = time.perf_counter()
         results = await asyncio.gather(*tasks, return_exceptions=True)
         total_ms = (time.perf_counter() - started) * 1000
 
@@ -68,7 +68,7 @@ class AnalysisPipeline:
         return aggregated, timings
 
     @staticmethod
-    def _timed(name: str, func, *args):
+    def _timed(func, *args):
         started = time.perf_counter()
         result = func(*args)
         return result, (time.perf_counter() - started) * 1000
