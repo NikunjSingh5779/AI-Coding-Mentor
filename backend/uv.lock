@@ -653,6 +653,7 @@ dependencies = [
     { name = "structlog" },
     { name = "tree-sitter" },
     { name = "tree-sitter-python" },
+    { name = "ruff" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -687,6 +688,7 @@ requires-dist = [
     { name = "structlog", specifier = ">=23.2.0,<25" },
     { name = "tree-sitter", specifier = ">=0.20.0,<1" },
     { name = "tree-sitter-python", specifier = ">=0.25.0" },
+    { name = "ruff", specifier = ">=0.16.10,<1" },
     { name = "types-requests", marker = "extra == 'dev'", specifier = ">=2.31.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.24.0,<1" },
 ]
