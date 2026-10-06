@@ -36,6 +36,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   readOnly = false,
 }) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const hoverDisposableRef = useRef<monaco.IDisposable | null>(null);
   const diagnosticsRef = useRef<Diagnostic[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const codeRef = useRef(initialCode);
@@ -73,7 +74,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         run: () => sendCodeUpdate(editor.getValue(), language),
       });
 
-      const hoverDisposable = monacoInstance.languages.registerHoverProvider(language, {
+      hoverDisposableRef.current?.dispose();
+      hoverDisposableRef.current = monacoInstance.languages.registerHoverProvider(language, {
         provideHover: (_model, position) => {
           const diagnostic = diagnosticsRef.current.find((item) => {
             if (item.line !== position.lineNumber) return false;
@@ -101,14 +103,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         },
       });
 
-      if (codeRef.current.trim()) {
-        sendCodeUpdate(codeRef.current, language);
-      }
-
-      return () => {
-        hoverDisposable.dispose();
-        editorRef.current = null;
-      };
+      return undefined;
     },
     [language, sendCodeUpdate],
   );
@@ -137,9 +132,16 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      hoverDisposableRef.current?.dispose();
+      hoverDisposableRef.current = null;
       editorRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (connectionStatus !== 'connected' || !codeRef.current.trim()) return;
+    sendCodeUpdate(codeRef.current, language);
+  }, [connectionStatus, language, sendCodeUpdate]);
 
   useEffect(() => {
     const editor = editorRef.current;
