@@ -112,6 +112,11 @@ Tick items only with evidence (command output, test report, ADR). Update this fi
 - [x] Docker/compose builds were **not** executed here (Docker available, image build not run) — limitation
 - [ ] Clean-checkout rehearsal using only the documented commands: **not run** — limitation
 - [x] Evidence for SC-1…SC-8 summarised in `docs/02-STATUS.md`; remaining gaps listed here
+- [x] Lint: every module added in PH4–PH9 is **ruff-clean** (`ruff check` → All checks passed)
+- [ ] `make check` is still red repo-wide: **235 pre-existing ruff errors** in files last
+      touched at Phase 2 (`app/controllers/`, `app/views/`, `app/models/`,
+      `app/analysis/python_analyzer.py`, `app/ws/endpoint.py`). Fixing them is a separate
+      refactor outside the phase file lists, so it is reported rather than silently folded in
 - [ ] Evidence attached for SC-1 to SC-8
 
 ## C. Release checklist

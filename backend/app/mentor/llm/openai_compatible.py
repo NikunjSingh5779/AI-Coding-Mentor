@@ -14,7 +14,7 @@ import httpx
 
 from app.core.logging import get_logger
 
-from .base import LLMError, LLMProvider, LLMResult, LLMUnavailable
+from .base import LLMError, LLMProvider, LLMResult, LLMUnavailableError
 
 logger = get_logger(__name__)
 
@@ -84,7 +84,7 @@ class DisabledProvider(LLMProvider):
     name = "disabled"
 
     async def complete(self, system: str, user: str, max_tokens: int) -> LLMResult:
-        raise LLMUnavailable("LLM integration is disabled (LLM_ENABLED=false)")
+        raise LLMUnavailableError("LLM integration is disabled (LLM_ENABLED=false)")
 
     async def is_ready(self) -> bool:
         return False

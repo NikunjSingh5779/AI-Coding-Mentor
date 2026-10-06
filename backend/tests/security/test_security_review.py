@@ -57,11 +57,17 @@ class TestNoSecretsInRepo:
     """A secret scan over tracked files (SC-6 / release gate)."""
 
     def test_env_is_not_tracked(self):
+        import shutil
         import subprocess
 
         repo_root = Path(__file__).resolve().parents[3]
-        tracked = subprocess.run(
-            ["git", "ls-files"], cwd=repo_root, capture_output=True, text=True, check=True
+        git = shutil.which("git")
+        if git is None:
+            pytest.skip("git is not available")
+        # Fixed argument list and a resolved absolute git path: there is no
+        # untrusted input here, so the bandit S603 warning is a false positive.
+        tracked = subprocess.run(  # noqa: S603
+            [git, "ls-files"], cwd=repo_root, capture_output=True, text=True, check=True
         ).stdout.splitlines()
         assert ".env" not in tracked, ".env must never be committed"
 

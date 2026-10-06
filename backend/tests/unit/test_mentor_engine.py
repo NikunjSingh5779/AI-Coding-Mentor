@@ -8,7 +8,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.mentor.engine import IssueRecord, MentorBudget, MentorEngine  # noqa: E402
-from app.mentor.llm.base import LLMError, LLMProvider, LLMResult, LLMUnavailable  # noqa: E402
+from app.mentor.llm.base import LLMError, LLMProvider, LLMResult  # noqa: E402
 from app.mentor.llm.registry import reset_llm_provider  # noqa: E402
 
 

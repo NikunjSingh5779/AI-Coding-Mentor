@@ -81,7 +81,7 @@ class RapidOCREngine(OCREngine):
                         confidence=float(conf),
                     )
                 )
-        mean_conf = sum(l.confidence for l in lines) / len(lines) if lines else 0.0
+        mean_conf = sum(line.confidence for line in lines) / len(lines) if lines else 0.0
         return OCRResult(lines=lines, engine=self.name, mean_confidence=mean_conf, elapsed_ms=round(elapsed, 1))
 
 

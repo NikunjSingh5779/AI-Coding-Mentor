@@ -11,8 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import time
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
 from app.config import get_settings
 from app.core.logging import get_logger

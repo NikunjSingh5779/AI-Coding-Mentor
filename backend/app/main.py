@@ -14,10 +14,10 @@ from fastapi.responses import JSONResponse
 
 from app.api.capture import router as capture_router
 from app.api.health import router as health_router
-from app.api.history import router as history_router
 from app.api.hints import router as hints_router
-from app.api.progress import router as progress_router
+from app.api.history import router as history_router
 from app.api.problems import router as problems_router
+from app.api.progress import router as progress_router
 from app.config import get_settings
 from app.core.errors import AppError
 from app.core.events import EventBus
@@ -145,8 +145,8 @@ def create_app() -> FastAPI:
 
     # WebSocket endpoint for real-time code analysis
     @app.websocket("/ws/code-analysis")
-    async def websocket_code_analysis(websocket: WebSocket, session_token: str = "anonymous"):
-        await websocket_endpoint(websocket, session_token)
+    async def websocket_code_analysis(websocket: WebSocket, session_token: str | None = None):
+        await websocket_endpoint(websocket, session_token or "anonymous")
 
     return app
 
@@ -159,9 +159,11 @@ if __name__ == "__main__":
     import uvicorn
 
     settings = get_settings()
+    # Bind to loopback by default: this is a single-user local app (Q5).
+    # Pass --host explicitly when a LAN address is genuinely needed.
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
+        host="127.0.0.1",
         port=8000,
         reload=settings.debug,
         log_config=None,  # Use our custom logging setup

@@ -22,7 +22,7 @@ class LLMError(Exception):
     """Raised when an LLM call fails after retries."""
 
 
-class LLMUnavailable(LLMError):
+class LLMUnavailableError(LLMError):
     """Raised when the LLM backend is unreachable or disabled."""
 
 

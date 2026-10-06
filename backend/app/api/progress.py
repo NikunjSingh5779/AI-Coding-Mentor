@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db_session
 from app.learner import repositories as repo
 from app.learner.adaptation import build_profile
-from app.learner.tracking import get_tracker, reset_trackers
+from app.learner.tracking import get_tracker
 
 router = APIRouter()
 

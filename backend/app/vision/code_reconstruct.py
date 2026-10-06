@@ -12,13 +12,6 @@ OCR_CONFIDENCE_GATE = 0.65
 _LINE_NUMBER = re.compile(r"^\s*(\d{1,4}|→|\u21b2)\s+")
 
 
-def _median_line_height(result: OCRResult) -> float:
-    heights = sorted(l.h for l in result.lines)
-    if not heights:
-        return 0.0
-    return heights[len(heights) // 2]
-
-
 def _estimate_indent(result: OCRResult, line_index: int, base_x: int, unit: int) -> int:
     """Estimate indent level from x-offset relative to the leftmost margin."""
     delta = result.lines[line_index].x - base_x
@@ -34,7 +27,7 @@ def _indent_geometry(result: OCRResult) -> tuple[int, int]:
     """
     if not result.lines:
         return 0, 40
-    xs = [l.x for l in result.lines]
+    xs = [line.x for line in result.lines]
     base_x = min(xs)
     deltas = sorted({x - base_x for x in xs if x - base_x > 2})
     unit = deltas[0] if deltas else 40
@@ -51,7 +44,7 @@ def reconstruct_code(result: OCRResult) -> tuple[str, bool]:
     if not result.lines or result.mean_confidence < OCR_CONFIDENCE_GATE:
         return "", False
 
-    lines_sorted = sorted(result.lines, key=lambda l: (l.y, l.x))
+    lines_sorted = sorted(result.lines, key=lambda line: (line.y, line.x))
     base_x, unit = _indent_geometry(result)
     out_lines: list[str] = []
     prev_y: int | None = None
