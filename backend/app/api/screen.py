@@ -48,7 +48,7 @@ async def analyze_screen(
                 "height": max(1, int(region_height)),
             }
         return await _vision.analyze(
-            data, language=language, manual_region=manual_region
+            data, language=language, manual_region=manual_region, session_key=session_token
         )
     except RuntimeError as exc:
         raise HTTPException(503, str(exc)) from exc
