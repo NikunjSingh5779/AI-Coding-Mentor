@@ -35,7 +35,7 @@ class Settings(BaseSettings):
 
     # Sandbox runner
     sandbox_url: str = Field(
-        default="http://localhost:8001", description="Sandbox runner service URL"
+        default="http://localhost:8100", description="Sandbox runner service URL"
     )
     sandbox_timeout: int = Field(
         default=30, description="Sandbox execution timeout in seconds"
