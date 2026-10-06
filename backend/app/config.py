@@ -84,6 +84,20 @@ class Settings(BaseSettings):
         default=200, description="Max hosted LLM hint generations per day"
     )
 
+    # Persistence / privacy (Q10 defaults)
+    store_code_text: bool = Field(
+        default=True,
+        description="Store redacted code text at checkpoints; false = diagnostics and metadata only",
+    )
+    retention_days: int | None = Field(
+        default=None, description="Auto-purge records older than N days; None = keep until deletion"
+    )
+
+    # Adaptation (PH6)
+    adaptation_enabled: bool = Field(
+        default=True, description="Enable rule-based hint adaptation from the mistake record"
+    )
+
     # WebSocket
     ws_heartbeat_interval: int = Field(
         default=30, description="WebSocket heartbeat interval in seconds"
