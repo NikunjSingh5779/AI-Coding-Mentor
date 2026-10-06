@@ -47,6 +47,7 @@ class SandboxRunner:
             "pids": 64,
             "max_output": 1_048_576,
         }
+        self.semaphore = asyncio.Semaphore(3)
         try:
             self.client = docker.from_env()
             self.startup_error = None
@@ -59,7 +60,8 @@ class SandboxRunner:
             raise HTTPException(400, "Unsupported language")
         if self.client is None:
             raise HTTPException(503, "Docker is unavailable to sandbox runner")
-        return await asyncio.to_thread(self._execute_sync, request)
+        async with self.semaphore:
+            return await asyncio.to_thread(self._execute_sync, request)
 
     def _execute_sync(self, request: ExecutionRequest) -> ExecutionResult:
         language = request.language.lower()
@@ -176,7 +178,10 @@ async def execute_code(
 
 @app.get("/health")
 async def health() -> dict[str, str]:
+    configured = bool(SANDBOX_SECRET)
     return {
-        "status": "healthy" if runner.client is not None else "degraded",
+        "status": "healthy"
+        if runner.client is not None and configured
+        else "degraded",
         "service": "sandbox-runner",
     }
