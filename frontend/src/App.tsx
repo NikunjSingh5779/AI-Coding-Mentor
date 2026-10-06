@@ -61,12 +61,12 @@ if __name__ == "__main__":
     return token;
   };
 
-  // Auto-connect on component mount
+  // Connect once when the app mounts. Manual disconnects stay disconnected.
   useEffect(() => {
-    if (connectionStatus === 'disconnected') {
-      connect(getSessionToken());
-    }
-  }, [connectionStatus, connect]);
+    const token = getSessionToken();
+    connect(token);
+    return () => disconnect();
+  }, [connect, disconnect]);
 
   // Handle diagnostic selection from panel
   const handleDiagnosticClick = (diagnostic: Diagnostic) => {
