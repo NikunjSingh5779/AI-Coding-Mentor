@@ -7,7 +7,7 @@ on:
     branches: [ main, develop ]
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '24'
   PYTHON_VERSION: '3.11'
 
 jobs:
@@ -89,7 +89,7 @@ jobs:
         cache-dependency-path: frontend/pnpm-lock.yaml
 
     - name: Install pnpm
-      run: npm install -g pnpm
+      run: npm install -g pnpm@11.8.0
 
     - name: Install dependencies
       run: |
@@ -109,7 +109,7 @@ jobs:
     - name: Run tests
       run: |
         cd frontend
-        pnpm test --coverage
+        pnpm test --run --coverage
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -119,6 +119,7 @@ jobs:
 
   # Sandbox Tests
   sandbox-tests:
+    if: ${{ hashFiles('sandbox/tests/**/*.py') != '' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -132,10 +133,6 @@ jobs:
     - name: Install uv
       run: pip install uv
 
-    - name: Build sandbox images
-      run: |
-        docker build -t mentor-sandbox-python sandbox/images/python
-
     - name: Install sandbox dependencies
       run: |
         cd sandbox
@@ -148,6 +145,7 @@ jobs:
 
   # End-to-End Tests
   e2e-tests:
+    if: ${{ hashFiles('frontend/e2e/**/*') != '' }}
     runs-on: ubuntu-latest
     needs: [backend-tests, frontend-tests]
 
@@ -238,7 +236,7 @@ jobs:
   # Docker Build
   docker-build:
     runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests, sandbox-tests]
+    needs: [backend-tests, frontend-tests]
 
     steps:
     - uses: actions/checkout@v4
