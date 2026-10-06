@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -56,7 +58,7 @@ async def run_code(
             analysis_type="execution",
             analyzer_name="sandbox",
             code_snapshot=request.code if settings.store_code_text else None,
-            code_hash=__import__("hashlib").sha256(request.code.encode()).hexdigest(),
+            code_hash=hashlib.sha256(request.code.encode("utf-8")).hexdigest(),
             findings=result,
             severity="info" if result["success"] else "error",
             is_blocking=not result["success"],
@@ -86,7 +88,7 @@ async def run_problem_tests(
         result = await get_execution_service().run_problem_tests(
             request.code,
             problem,
-            request.language,
+            request.language.lower(),
         )
     except SandboxUnavailable as exc:
         raise HTTPException(503, str(exc)) from exc
@@ -97,7 +99,7 @@ async def run_problem_tests(
             analysis_type="tests",
             analyzer_name="sandbox",
             code_snapshot=request.code if settings.store_code_text else None,
-            code_hash=__import__("hashlib").sha256(request.code.encode()).hexdigest(),
+            code_hash=hashlib.sha256(request.code.encode("utf-8")).hexdigest(),
             findings=result,
             severity="info" if result["passed"] else "error",
             is_blocking=not result["passed"],
