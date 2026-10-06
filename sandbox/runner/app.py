@@ -94,7 +94,10 @@ class SandboxRunner:
                     cpu_period=100000,
                     cpu_quota=50000,
                     pids_limit=self.policy["pids"],
-                    tmpfs={"/tmp": "rw,noexec,nosuid,nodev,size=32m"},
+                    tmpfs={
+                        "/tmp": "rw,noexec,nosuid,nodev,size=16m",
+                        "/exec": "rw,nosuid,nodev,size=32m",
+                    },
                     environment={
                         "PYTHONUNBUFFERED": "1",
                         "PYTHONDONTWRITEBYTECODE": "1",
