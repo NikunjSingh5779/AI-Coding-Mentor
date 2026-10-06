@@ -4,7 +4,7 @@
  * Phase 2: Real-time static analysis pipeline with Monaco editor integration
  */
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import CodeEditor from './components/CodeEditor';
 import DiagnosticPanel from './components/DiagnosticPanel';
 import { useAnalysisStore } from './stores/analysisStore';
