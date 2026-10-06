@@ -37,7 +37,7 @@ test: ## Run all tests
 	@echo "Running backend tests..."
 	cd backend && python -m pytest tests/ -v
 	@echo "Running frontend tests..."
-	cd frontend && npm test
+	cd frontend && pnpm test --run
 
 check: ## Run linting and type checking
 	@echo "Checking backend code..."
