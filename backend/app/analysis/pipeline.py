@@ -1,84 +1,74 @@
-"""
-Fast Static Analysis Pipeline Orchestrator.
-Runs AST syntax checking, Tree-sitter error extraction, and Ruff linter concurrently.
-"""
+"""Fast static-analysis pipeline."""
+
+from __future__ import annotations
 
 import asyncio
 import time
-from typing import List, Dict, Any, Tuple
-from app.schemas.diagnostic import Diagnostic
+from typing import Any
+
 from app.analysis.aggregator import DiagnosticsAggregator
+from app.analysis.linters.ruff_python import RuffPythonLinter
 from app.analysis.python_ast import analyze_python_ast
 from app.analysis.treesitter.errors import extract_treesitter_diagnostics
-from app.analysis.linters.ruff_python import RuffPythonLinter
+from app.config import get_settings
 
 
 class AnalysisPipeline:
-    """Fast-path static analysis pipeline for code snapshots."""
-
-    def __init__(self):
+    def __init__(self) -> None:
         self.aggregator = DiagnosticsAggregator()
         self.ruff_linter = RuffPythonLinter()
 
     async def analyze(
-        self,
-        code: str,
-        language: str = "python",
-        seq: int = 0
-    ) -> Tuple[List[Diagnostic], Dict[str, float]]:
-        """
-        Run analyzers concurrently in a threadpool to not block the event loop.
-        Returns aggregated diagnostics and stage timings in milliseconds.
-        """
+        self, code: str, language: str = "python", seq: int = 0
+    ) -> tuple[list, dict[str, float]]:
         if not code:
             return [], {}
 
-        stage_timings: Dict[str, float] = {}
-        all_diagnostics: List[Diagnostic] = []
+        settings = get_settings()
+        enabled = {
+            item.strip().lower()
+            for item in (settings.enabled_analyzers if hasattr(settings, "enabled_analyzers") else {"python_ast","treesitter","ruff"})
+        }
+
+        if language.lower() != "python":
+            return [], {"total": 0.0}
+
         loop = asyncio.get_running_loop()
+        tasks: list[asyncio.Future[Any]] = []
+        names: list[str] = []
 
-        # Helper to run synchronous analyzer and measure its duration
-        def _run_ast():
-            t0 = time.perf_counter()
-            diags = analyze_python_ast(code, seq=seq)
-            elapsed = (time.perf_counter() - t0) * 1000
-            return "ast", diags, elapsed
+        if "python_ast" in enabled or "ast" in enabled:
+            names.append("python_ast")
+            tasks.append(loop.run_in_executor(None, lambda: self._timed("python_ast", analyze_python_ast, code, seq)))
+        if "treesitter" in enabled:
+            names.append("treesitter")
+            tasks.append(loop.run_in_executor(None, lambda: self._timed("treesitter", extract_treesitter_diagnostics, code, language, seq)))
+        if "ruff" in enabled:
+            names.append("ruff")
+            tasks.append(loop.run_in_executor(None, lambda: self._timed("ruff", self.ruff_linter.lint, code, "snippet.py", seq)))
 
-        def _run_treesitter():
-            t0 = time.perf_counter()
-            diags = extract_treesitter_diagnostics(code, language=language, seq=seq)
-            elapsed = (time.perf_counter() - t0) * 1000
-            return "treesitter", diags, elapsed
-
-        def _run_ruff():
-            t0 = time.perf_counter()
-            diags = self.ruff_linter.lint(code, filename="snippet.py", seq=seq)
-            elapsed = (time.perf_counter() - t0) * 1000
-            return "ruff", diags, elapsed
-
-        # Execute concurrent tasks in default thread pool
-        t_total_start = time.perf_counter()
-
-        tasks = [
-            loop.run_in_executor(None, _run_ast),
-            loop.run_in_executor(None, _run_treesitter),
-            loop.run_in_executor(None, _run_ruff),
-        ]
-
+        started = time.perf_counter()
         results = await asyncio.gather(*tasks, return_exceptions=True)
+        total_ms = (time.perf_counter() - started) * 1000
 
-        for res in results:
-            if isinstance(res, Exception):
+        diagnostics = []
+        timings: dict[str, float] = {}
+        for name, result in zip(names, results, strict=False):
+            if isinstance(result, Exception):
+                timings[name] = 0.0
                 continue
-            name, diags, duration_ms = res
-            stage_timings[name] = round(duration_ms, 2)
-            all_diagnostics.extend(diags)
+            diags, duration = result
+            diagnostics.extend(diags)
+            timings[name] = round(duration, 2)
 
-        # Aggregate and deduplicate
-        t_agg_start = time.perf_counter()
-        code_lines = code.splitlines()
-        aggregated = self.aggregator.aggregate(all_diagnostics, code_lines=code_lines)
-        stage_timings["aggregator"] = round((time.perf_counter() - t_agg_start) * 1000, 2)
-        stage_timings["total"] = round((time.perf_counter() - t_total_start) * 1000, 2)
+        aggregate_started = time.perf_counter()
+        aggregated = self.aggregator.aggregate(diagnostics, code_lines=code.splitlines())
+        timings["aggregator"] = round((time.perf_counter() - aggregate_started) * 1000, 2)
+        timings["total"] = round(total_ms + timings["aggregator"], 2)
+        return aggregated, timings
 
-        return aggregated, stage_timings
+    @staticmethod
+    def _timed(name: str, func, *args):
+        started = time.perf_counter()
+        result = func(*args)
+        return result, (time.perf_counter() - started) * 1000
