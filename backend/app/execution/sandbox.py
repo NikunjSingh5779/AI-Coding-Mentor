@@ -19,6 +19,7 @@ class SandboxClient:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.max_code_bytes = max_code_bytes
+        self.secret = secret
 
     async def execute(
         self,
