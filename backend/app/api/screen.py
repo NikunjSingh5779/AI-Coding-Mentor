@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from app.config import get_settings
 from app.vision.service import ScreenVisionService
@@ -16,6 +16,10 @@ async def analyze_screen(
     session_token: str,
     language: str = "python",
     frame: UploadFile = File(...),
+    region_left: int | None = Form(default=None),
+    region_top: int | None = Form(default=None),
+    region_width: int | None = Form(default=None),
+    region_height: int | None = Form(default=None),
 ) -> dict:
     settings = get_settings()
     if not settings.feature_screen_source:
@@ -27,8 +31,16 @@ async def analyze_screen(
         raise HTTPException(413, "Frame exceeds configured limit")
 
     try:
+        manual_region = None
+        if None not in (region_left, region_top, region_width, region_height):
+            manual_region = {
+                "left": max(0, int(region_left)),
+                "top": max(0, int(region_top)),
+                "width": max(1, int(region_width)),
+                "height": max(1, int(region_height)),
+            }
         return await ScreenVisionService(settings, _pipeline).analyze(
-            data, language=language
+            data, language=language, manual_region=manual_region
         )
     except RuntimeError as exc:
         raise HTTPException(503, str(exc)) from exc
