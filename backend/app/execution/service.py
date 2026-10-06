@@ -6,11 +6,11 @@ import hashlib
 import json
 from typing import Any
 
-from app.execution.sandbox import SandboxExecutor
+from app.execution.sandbox import SandboxClient
 
 
 class ExecutionService:
-    def __init__(self, sandbox: SandboxExecutor) -> None:
+    def __init__(self, sandbox: SandboxClient) -> None:
         self.sandbox = sandbox
 
     async def run(
@@ -21,7 +21,10 @@ class ExecutionService:
         timeout_seconds: int | None = None,
     ) -> dict:
         return await self.sandbox.execute(
-            code, language, stdin=stdin, timeout_seconds=timeout_seconds
+            code,
+            language,
+            stdin=stdin,
+            timeout_seconds=timeout_seconds,
         )
 
     async def run_problem_tests(
@@ -30,13 +33,15 @@ class ExecutionService:
         problem: dict[str, Any],
         language: str,
     ) -> dict[str, Any]:
-        """Run problem cases through a generated JSON stdin protocol.
-
-        The wrapper imports the learner source and invokes the configured entry
-        function, so expected values are compared outside the learner process.
-        """
+        """Execute function-style Python problems without invoking __main__ blocks."""
 
         entry_function = problem.get("entry_function")
+        if language != "python":
+            return {
+                "passed": False,
+                "tests": [],
+                "error": "Problem tests currently target Python.",
+            }
         if not entry_function:
             return {
                 "passed": False,
@@ -44,35 +49,40 @@ class ExecutionService:
                 "error": "Problem has no entry_function",
             }
 
-        tests = problem.get("test_cases", [])
-        results = []
-
-        for case in tests:
-            payload = json.dumps(case["input"], separators=(",", ":"))
+        results: list[dict[str, Any]] = []
+        for case in problem.get("test_cases", []):
+            payload = json.dumps(
+                case.get("input", {}),
+                separators=(",", ":"),
+            )
+            source = json.dumps(code)
             wrapper = (
-                f"import json\n"
-                f"from main import {entry_function}\n"
-                f"data=json.loads({payload!r})\n"
-                f"result={entry_function}(**data)\n"
-                f"print(json.dumps({{'result': result}}))\n"
+                "import json\n"
+                f"source = {source}\n"
+                "namespace = {'__name__': 'solution'}\n"
+                "exec(compile(source, 'solution.py', 'exec'), namespace)\n"
+                f"payload = json.loads({payload!r})\n"
+                f"result = namespace[{entry_function!r}](**payload)\n"
+                "print(json.dumps({'result': result}))\n"
             )
             run = await self.sandbox.execute(
-                code + "\n" + wrapper,
-                "python" if language == "python" else language,
-                stdin="",
+                wrapper,
+                "python",
                 timeout_seconds=15,
             )
-            expected = case.get("expected")
+
             actual = None
             parse_error = None
-            if run["stdout"].strip():
+            stdout = str(run.get("stdout", ""))
+            if stdout.strip():
                 try:
-                    actual = json.loads(run["stdout"].strip().splitlines()[-1])["result"]
+                    actual = json.loads(stdout.strip().splitlines()[-1])["result"]
                 except Exception as exc:
                     parse_error = str(exc)
 
+            expected = case.get("expected")
             passed = (
-                run["success"]
+                bool(run.get("success"))
                 and parse_error is None
                 and actual == expected
             )
@@ -82,8 +92,8 @@ class ExecutionService:
                     "expected": expected,
                     "actual": actual,
                     "passed": passed,
-                    "stdout": run["stdout"],
-                    "stderr": run["stderr"],
+                    "stdout": stdout,
+                    "stderr": run.get("stderr", ""),
                     "error_type": run.get("error_type"),
                 }
             )
@@ -93,5 +103,5 @@ class ExecutionService:
             "tests": results,
             "test_count": len(results),
             "passed_count": sum(1 for item in results if item["passed"]),
-            "code_hash": hashlib.sha256(code.encode()).hexdigest(),
+            "code_hash": hashlib.sha256(code.encode("utf-8")).hexdigest(),
         }
