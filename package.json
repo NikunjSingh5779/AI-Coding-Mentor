@@ -25,7 +25,12 @@
     "clean": "npm run clean:backend && npm run clean:frontend && npm run clean:sandbox",
     "clean:backend": "cd backend && rm -rf .venv __pycache__ .pytest_cache .mypy_cache .ruff_cache",
     "clean:frontend": "cd frontend && rm -rf node_modules dist .vite",
-    "clean:sandbox": "cd sandbox && rm -rf .venv __pycache__ .pytest_cache"
+    "clean:sandbox": "cd sandbox && rm -rf .venv __pycache__ .pytest_cache",
+    "desktop:build": "powershell -ExecutionPolicy Bypass -File .\\scripts\\build-desktop.ps1",
+    "desktop:run": "powershell -ExecutionPolicy Bypass -File .\\scripts\\run-desktop.ps1",
+    "desktop:stop": "powershell -ExecutionPolicy Bypass -File .\\scripts\\stop-desktop.ps1",
+    "sandbox:build": "docker compose build sandbox-python sandbox-javascript sandbox-cpp sandbox-java",
+    "verify": "npm run check && npm run test"
   },
   "devDependencies": {
     "prettier": "^3.1.1",
