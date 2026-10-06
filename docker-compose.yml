@@ -21,6 +21,8 @@ services:
     build:
       context: ./sandbox
       dockerfile: Dockerfile
+    environment:
+      SANDBOX_SECRET: dev-only-change-me
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
