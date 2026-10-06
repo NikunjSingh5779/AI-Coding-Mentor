@@ -251,6 +251,18 @@ def load_options(path: str) -> dict:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
+def ensure_session(server_url: str, token: str, language: str) -> str:
+    if token:
+        return token
+    response = httpx.post(
+        server_url.rstrip("/") + "/api/v1/sessions",
+        json={"user_id": "desktop-overlay", "language": language},
+        timeout=10.0,
+    )
+    response.raise_for_status()
+    return str(response.json()["session_token"])
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="desktop_overlay/config.json")
@@ -267,9 +279,11 @@ def main() -> int:
 
     server = args.server or options.get("server_url", "http://127.0.0.1:8000")
     session = args.session or options.get("session_token", "")
-    if not session:
-        raise SystemExit("Provide --session or session_token in config.json")
     language = args.language or options.get("language", "python")
+    try:
+        session = ensure_session(server, session, language)
+    except Exception as exc:
+        raise SystemExit(f"Could not create mentor session: {exc}") from exc
     app = QApplication.instance() or QApplication([])
     window = MentorOverlay(
         server,
@@ -283,8 +297,8 @@ def main() -> int:
     window.show()
     try:
         import keyboard
-        keyboard.add_hotkey("f8", window.request_read)
-        keyboard.add_hotkey("f9", lambda: window.request_hint(1))
+        keyboard.add_hotkey("f8", lambda: QTimer.singleShot(0, window.request_read))
+        keyboard.add_hotkey("f9", lambda: QTimer.singleShot(0, lambda: window.request_hint(1)))
     except Exception:
         pass
     return app.exec()
