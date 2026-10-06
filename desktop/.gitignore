@@ -1,0 +1,11 @@
+*.exe
+*.msi
+*.dmg
+*.deb
+*.rpm
+*.AppImage
+*.pkg
+*.zip
+*.app
+.cache/
+target/
