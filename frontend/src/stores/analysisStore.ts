@@ -10,6 +10,7 @@ import {
   Diagnostic,
   WebSocketMessage,
   AnalysisResult,
+  BackendDiagnostic,
   ConnectionStatus,
   WebSocketState,
 } from '../types/analysis';
@@ -31,29 +32,6 @@ const getWebSocketUrl = (): string => {
   const base = configured || `${protocol}//${window.location.host}`;
   return base.replace(/^https?:/, protocol);
 };
-
-interface BackendDiagnostic {
-  id?: string;
-  seq?: number;
-  origin?: string;
-  source?: string;
-  rule?: string | null;
-  category?: string;
-  severity?: Diagnostic['severity'];
-  message?: string;
-  message_raw?: string;
-  range?: {
-    start?: { line?: number; column?: number; col?: number };
-    end?: { line?: number; column?: number; col?: number };
-  };
-  line?: number;
-  column?: number;
-  end_line?: number | null;
-  end_column?: number | null;
-  fix_suggestion?: string | null;
-  fingerprint?: string;
-  confidence?: number;
-}
 
 const normalizeDiagnostic = (diagnostic: BackendDiagnostic): Diagnostic => ({
   id: diagnostic.id,
