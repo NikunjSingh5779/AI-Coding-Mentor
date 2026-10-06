@@ -6,7 +6,7 @@ import asyncio
 import json
 import time
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -25,21 +25,17 @@ class WebSocketSession:
     websocket: WebSocket
     connected_at: float
     last_activity: float
-    sequence_number: int = 0
+    sequence_number: int = -1
     language: str = "python"
     analysis_count: int = 0
     total_analysis_time: float = 0.0
-    request_timestamps: deque[float] = None
-
-    def __post_init__(self) -> None:
-        if self.request_timestamps is None:
-            self.request_timestamps = deque()
+    request_timestamps: deque[float] = field(default_factory=deque)
 
 
 class ConnectionManager:
     def __init__(self) -> None:
-        self._sessions: dict[str, WebSocketSession] = {}
         settings = get_settings()
+        self._sessions: dict[str, WebSocketSession] = {}
         self._heartbeat_interval = max(5, settings.ws_heartbeat_interval)
         self._max_message_size = max(1024, settings.ws_max_message_size)
         self._heartbeat_task: asyncio.Task[None] | None = None
@@ -76,7 +72,11 @@ class ConnectionManager:
 
         return True
 
-    def disconnect(self, session_token: str) -> None:
+    def disconnect(self, session_token: str, websocket: WebSocket | None = None) -> None:
+        current = self._sessions.get(session_token)
+        if websocket is not None and current is not None and current.websocket is not websocket:
+            return
+
         session = self._sessions.pop(session_token, None)
         if session:
             logger.info(
@@ -86,6 +86,7 @@ class ConnectionManager:
                     "analysis_count": session.analysis_count,
                 },
             )
+
         if not self._sessions and self._heartbeat_task:
             self._heartbeat_task.cancel()
             self._heartbeat_task = None
@@ -105,18 +106,23 @@ class ConnectionManager:
 
     def analysis_semaphore(self) -> asyncio.Semaphore:
         if self._analysis_semaphore is None:
-            self._analysis_semaphore = asyncio.Semaphore(max(1, get_settings().max_concurrent_runs))
+            self._analysis_semaphore = asyncio.Semaphore(
+                max(1, get_settings().max_concurrent_runs)
+            )
         return self._analysis_semaphore
 
-    async def send_json(self, session_token: str, data: dict[str, Any]) -> bool:
+    async def send_json(
+        self, session_token: str, data: dict[str, Any]
+    ) -> bool:
         session = self._sessions.get(session_token)
         if not session or session.websocket.client_state != WebSocketState.CONNECTED:
             return False
+
         try:
             await session.websocket.send_json(data)
             return True
         except Exception:
-            self.disconnect(session_token)
+            self.disconnect(session_token, session.websocket)
             return False
 
     async def _heartbeat_loop(self) -> None:
@@ -125,22 +131,21 @@ class ConnectionManager:
                 await asyncio.sleep(self._heartbeat_interval)
                 now = time.time()
                 stale: list[str] = []
+
                 for token, session in list(self._sessions.items()):
                     if now - session.last_activity > self._heartbeat_interval * 2:
                         stale.append(token)
                         continue
+
                     if not await self.send_json(
                         token, {"type": "ping", "timestamp": now}
                     ):
                         stale.append(token)
+
                 for token in stale:
                     self.disconnect(token)
         except asyncio.CancelledError:
             return
-
-    @property
-    def active_count(self) -> int:
-        return len(self._sessions)
 
 
 manager = ConnectionManager()
@@ -178,24 +183,29 @@ async def handle_code_update(
 
     if (
         not isinstance(sequence, int)
+        or isinstance(sequence, bool)
         or sequence < 0
         or not isinstance(code, str)
         or not isinstance(language, str)
+        or len(language) > 32
     ):
         await websocket.send_json(_error("Invalid code_update payload", "INVALID_PAYLOAD"))
         return
 
     if len(json.dumps(message, ensure_ascii=False).encode("utf-8")) > manager._max_message_size:
-        await websocket.send_json(_error("Message too large", "MESSAGE_TOO_LARGE", sequence))
+        await websocket.send_json(
+            _error("Message too large", "MESSAGE_TOO_LARGE", sequence)
+        )
         return
 
-    # Only analyze the latest snapshot. Older queued messages must never overwrite
-    # newer diagnostics.
+    # Drop stale/duplicate snapshots before they consume analysis capacity.
     if sequence <= session.sequence_number:
         return
 
     if not manager.allow_analysis(session):
-        await websocket.send_json(_error("Analysis rate limit exceeded", "RATE_LIMITED", sequence))
+        await websocket.send_json(
+            _error("Analysis rate limit exceeded", "RATE_LIMITED", sequence)
+        )
         return
 
     session.sequence_number = sequence
@@ -204,11 +214,14 @@ async def handle_code_update(
 
     started = time.perf_counter()
     async with manager.analysis_semaphore():
-        diagnostics, stage_timings = await pipeline.analyze(code, language=language, seq=sequence)
+        diagnostics, stage_timings = await pipeline.analyze(
+            code, language=language, seq=sequence
+        )
     elapsed_ms = (time.perf_counter() - started) * 1000
 
     current = manager.get_session(session_token)
-    if current is not session or sequence < session.sequence_number:
+    if current is not session or sequence != session.sequence_number:
+        # The connection was replaced or a newer snapshot arrived.
         return
 
     session.analysis_count += 1
@@ -248,8 +261,7 @@ async def handle_code_update(
             "analysis_time_ms": round(elapsed_ms, 2),
             "lines_of_code": len(code.splitlines()),
             "has_syntax_errors": any(
-                d.severity.value == "error" and d.origin.value == "parser"
-                for d in diagnostics
+                d.category.startswith("SYNTAX_") for d in diagnostics
             ),
             "performance": {
                 "within_budget": elapsed_ms <= 100,
@@ -262,7 +274,13 @@ async def handle_code_update(
     )
 
 
-async def websocket_endpoint(websocket: WebSocket, session_token: str = "anonymous") -> None:
+async def websocket_endpoint(
+    websocket: WebSocket, session_token: str = "anonymous"
+) -> None:
+    if not session_token or len(session_token) > 128:
+        await websocket.close(code=1008, reason="Invalid session token")
+        return
+
     if not await manager.connect(session_token, websocket):
         return
 
@@ -282,7 +300,7 @@ async def websocket_endpoint(websocket: WebSocket, session_token: str = "anonymo
             try:
                 raw = await asyncio.wait_for(
                     websocket.receive_text(),
-                    timeout=self_timeout := manager._heartbeat_interval,
+                    timeout=manager._heartbeat_interval,
                 )
             except asyncio.TimeoutError:
                 if manager.get_session(session_token):
@@ -292,7 +310,9 @@ async def websocket_endpoint(websocket: WebSocket, session_token: str = "anonymo
                 continue
 
             if len(raw.encode("utf-8")) > manager._max_message_size:
-                await websocket.send_json(_error("Message too large", "MESSAGE_TOO_LARGE"))
+                await websocket.send_json(
+                    _error("Message too large", "MESSAGE_TOO_LARGE")
+                )
                 continue
 
             try:
@@ -301,26 +321,36 @@ async def websocket_endpoint(websocket: WebSocket, session_token: str = "anonymo
                 await websocket.send_json(_error("Invalid JSON", "INVALID_JSON"))
                 continue
 
-            if not isinstance(message, dict) or not isinstance(message.get("type"), str):
+            if not isinstance(message, dict) or not isinstance(
+                message.get("type"), str
+            ):
                 await websocket.send_json(
-                    _error("Message must be a JSON object with a type field", "INVALID_MESSAGE")
+                    _error(
+                        "Message must be a JSON object with a type field",
+                        "INVALID_MESSAGE",
+                    )
                 )
                 continue
 
             message_type = message["type"]
-            session = manager.get_session(session_token)
-            if session:
-                session.last_activity = time.time()
+            current = manager.get_session(session_token)
+            if current:
+                current.last_activity = time.time()
 
             if message_type == "ping":
-                await websocket.send_json({"type": "pong", "timestamp": time.time()})
+                await websocket.send_json(
+                    {"type": "pong", "timestamp": time.time()}
+                )
             elif message_type == "pong":
                 continue
             elif message_type == "code_update":
                 await handle_code_update(websocket, session_token, message)
             else:
                 await websocket.send_json(
-                    _error(f"Unknown message type: {message_type}", "UNKNOWN_MESSAGE_TYPE")
+                    _error(
+                        f"Unknown message type: {message_type}",
+                        "UNKNOWN_MESSAGE_TYPE",
+                    )
                 )
 
     except WebSocketDisconnect:
@@ -328,13 +358,18 @@ async def websocket_endpoint(websocket: WebSocket, session_token: str = "anonymo
     except asyncio.CancelledError:
         raise
     except Exception:
-        logger.exception("WebSocket connection failed", extra={"session_token": session_token})
+        logger.exception(
+            "WebSocket connection failed",
+            extra={"session_token": session_token},
+        )
         try:
-            await websocket.send_json(_error("Internal server error", "INTERNAL_ERROR"))
+            await websocket.send_json(
+                _error("Internal server error", "INTERNAL_ERROR")
+            )
         except Exception:
             pass
     finally:
-        manager.disconnect(session_token)
+        manager.disconnect(session_token, websocket)
 
 
 __all__ = ["manager", "pipeline", "websocket_endpoint", "WebSocketSession"]
