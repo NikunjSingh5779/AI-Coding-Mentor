@@ -68,6 +68,13 @@ if __name__ == "__main__":
     return () => disconnect();
   }, [connect, disconnect]);
 
+  // Analyze the current editor contents as soon as the socket becomes ready.
+  useEffect(() => {
+    if (connectionStatus === 'connected' && code.trim()) {
+      useAnalysisStore.getState().sendCodeUpdate(code, 'python');
+    }
+  }, [connectionStatus, code]);
+
   // Handle diagnostic selection from panel
   const handleDiagnosticClick = (diagnostic: Diagnostic) => {
     setSelectedDiagnostic(diagnostic);
