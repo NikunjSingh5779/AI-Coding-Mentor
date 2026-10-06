@@ -19,11 +19,28 @@ export interface Diagnostic {
   confidence?: number;
 }
 
+export interface BackendDiagnostic {
+  id?: string;
+  seq?: number;
+  origin?: string;
+  rule?: string | null;
+  category?: string;
+  severity?: Diagnostic['severity'];
+  message?: string;
+  message_raw?: string;
+  range?: {
+    start?: { line?: number; column?: number; col?: number };
+    end?: { line?: number; column?: number; col?: number };
+  };
+  fingerprint?: string;
+  confidence?: number;
+}
+
 export interface AnalysisResult {
   type: 'analysis_result';
   sequence: number;
   session_token: string;
-  diagnostics: Diagnostic[];
+  diagnostics: BackendDiagnostic[];
   stage_timings?: Record<string, number>;
   analysis_time_ms: number;
   lines_of_code: number;
