@@ -39,7 +39,7 @@ async def run_code(
         raise HTTPException(503, "Execution is disabled")
 
     session = await get_session(db, request.session_token)
-    if session is None:
+    if session is None or not session.is_active:
         raise HTTPException(404, "Session not found")
 
     try:
@@ -77,7 +77,7 @@ async def run_problem_tests(
         raise HTTPException(503, "Execution is disabled")
 
     session = await get_session(db, request.session_token)
-    if session is None:
+    if session is None or not session.is_active:
         raise HTTPException(404, "Session not found")
 
     problem = get_problem(request.problem_id)
