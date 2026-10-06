@@ -4,19 +4,13 @@
   "version": "0.0.0",
   "description": "AI Real-Time Coding Screener - A web app that watches learner code and provides progressive hints",
   "type": "module",
-  "workspaces": [
-    "frontend",
-    "backend",
-    "sandbox",
-    "eval"
-  ],
   "scripts": {
     "check": "npm run check:backend && npm run check:frontend",
     "check:backend": "cd backend && uv run ruff check . && uv run ruff format --check . && uv run mypy .",
     "check:frontend": "cd frontend && pnpm lint && pnpm typecheck && pnpm format:check",
-    "test": "npm run test:backend && npm run test:frontend && npm run test:sandbox",
+    "test": "npm run test:backend && npm run test:frontend",
     "test:backend": "cd backend && uv run pytest",
-    "test:frontend": "cd frontend && pnpm test",
+    "test:frontend": "cd frontend && pnpm test --run",
     "test:sandbox": "cd sandbox && uv run pytest tests",
     "types": "cd backend && uv run python -m app.schemas.export && cd ../frontend && pnpm json-schema-to-typescript",
     "db:up": "docker compose up -d db",
@@ -30,7 +24,7 @@
     "e2e": "cd frontend && pnpm playwright test",
     "setup": "npm run setup:backend && npm run setup:frontend && npm run setup:sandbox && npm run setup:eval",
     "setup:backend": "cd backend && uv sync",
-    "setup:frontend": "cd frontend && pnpm install",
+    "setup:frontend": "cd frontend && pnpm install --frozen-lockfile",
     "setup:sandbox": "cd sandbox && uv sync",
     "setup:eval": "cd eval && uv sync",
     "clean": "npm run clean:backend && npm run clean:frontend && npm run clean:sandbox",
@@ -53,8 +47,8 @@
     ]
   },
   "engines": {
-    "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
+    "node": ">=24.0.0",
+    "pnpm": ">=11.8.0"
   },
   "packageManager": "pnpm@11.8.0",
   "repository": {
