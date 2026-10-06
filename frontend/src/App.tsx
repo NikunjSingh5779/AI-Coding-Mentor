@@ -1,273 +1,251 @@
-/**
- * AI Real-Time Coding Screener - Main Application
- *
- * Phase 2: Real-time static analysis pipeline with Monaco editor integration
- */
-
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import CodeEditor from './components/CodeEditor';
 import DiagnosticPanel from './components/DiagnosticPanel';
+import FloatingMentor from './components/FloatingMentor';
+import ProblemPanel from './components/ProblemPanel';
+import AnalyticsPanel from './components/AnalyticsPanel';
+import ScreenCapturePanel from './components/ScreenCapturePanel';
 import { useAnalysisStore } from './stores/analysisStore';
-import { Diagnostic } from './types/analysis';
+import { createSession, getSession, runCode, type Problem, type ExecutionResult } from './services/api';
+import type { Diagnostic } from './types/analysis';
 import './App.css';
 
+const STARTER = `# AI Coding Mentor
+# The mentor will analyze this code as you type.
+
+def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+print(fibonacci(10))
+`;
+
+const LANGUAGES = [
+  { value: 'python', label: 'Python' },
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'cpp', label: 'C++' },
+  { value: 'java', label: 'Java' },
+] as const;
+
 function App() {
+  const [code, setCode] = useState(STARTER);
+  const [language, setLanguage] = useState('python');
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [problem, setProblem] = useState<Problem | null>(null);
+  const [output, setOutput] = useState<ExecutionResult | null>(null);
+  const [running, setRunning] = useState(false);
+  const [screenDiagnostics, setScreenDiagnostics] = useState<Diagnostic[]>([]);
+  const [screenCode, setScreenCode] = useState('');
+  const [tab, setTab] = useState<'problems' | 'analytics' | 'screen'>('problems');
+  const [theme, setTheme] = useState<'vs-dark' | 'vs-light'>('vs-dark');
+
   const {
-    connectionStatus,
     connect,
     disconnect,
+    connectionStatus,
     diagnostics,
     lastAnalysisTime,
     analysisCount,
     averageAnalysisTime,
-    sessionToken
   } = useAnalysisStore();
 
-  const [code, setCode] = useState(
-    `# Welcome to AI Real-Time Coding Screener
-# Type Python code below to see real-time analysis
-
-def calculate_fibonacci(n):
-    """Calculate fibonacci number using recursion."""
-    if n <= 1:
-        return n
-    return calculate_fibonacci(n-1) + calculate_fibonacci(n-2)
-
-def main():
-    # Test the fibonacci function
-    number = 10
-    result = calculate_fibonacci(number)
-    print(f"Fibonacci of {number} is {result}")
-
-if __name__ == "__main__":
-    main()
-`
-  );
-
-  const [selectedDiagnostic, setSelectedDiagnostic] = useState<Diagnostic | null>(null);
-  const [theme, setTheme] = useState<'vs-dark' | 'vs-light'>('vs-dark');
-
-  // Each browser tab gets its own session token so users never evict each other's sockets.
-  const getSessionToken = (): string => {
-    const key = 'ai-coding-mentor-session-token';
-    const existing = sessionStorage.getItem(key);
-    if (existing) return existing;
-
-    const token =
-      typeof crypto !== 'undefined' && 'randomUUID' in crypto
-        ? crypto.randomUUID()
-        : `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    sessionStorage.setItem(key, token);
-    return token;
-  };
-
-  // Connect once when the app mounts. Manual disconnects stay disconnected.
   useEffect(() => {
-    const token = getSessionToken();
-    connect(token);
-    return () => disconnect();
+    let cancelled = false;
+
+    const bootstrap = async () => {
+      const stored = sessionStorage.getItem('ai-coding-mentor-session-token');
+      let token = stored;
+      if (stored) {
+        try {
+          await getSession(stored);
+        } catch {
+          token = null;
+          sessionStorage.removeItem('ai-coding-mentor-session-token');
+        }
+      }
+
+      if (!token) {
+        const created = await createSession('local-user', language);
+        token = created.session_token;
+        sessionStorage.setItem('ai-coding-mentor-session-token', token);
+      }
+
+      if (!cancelled) {
+        setSessionToken(token);
+        connect(token);
+      }
+    };
+
+    void bootstrap().catch(() => {
+      if (!cancelled) setSessionToken(null);
+    });
+
+    return () => {
+      cancelled = true;
+      disconnect();
+    };
   }, [connect, disconnect]);
 
-  // Handle diagnostic selection from panel
-  const handleDiagnosticClick = (diagnostic: Diagnostic) => {
-    setSelectedDiagnostic(diagnostic);
-    // TODO: Jump to line in editor when Monaco ref is available
-  };
+  const combinedDiagnostics = useMemo(
+    () => [...diagnostics, ...screenDiagnostics],
+    [diagnostics, screenDiagnostics],
+  );
 
-  // Connection status styles
-  const getConnectionStatusStyle = () => {
-    switch (connectionStatus) {
-      case 'connected':
-        return 'text-green-400 bg-green-900';
-      case 'connecting':
-        return 'text-yellow-400 bg-yellow-900 animate-pulse';
-      case 'disconnected':
-        return 'text-gray-400 bg-gray-700';
-      case 'error':
-        return 'text-red-400 bg-red-900';
-      default:
-        return 'text-gray-400 bg-gray-700';
+  const execute = async () => {
+    if (!sessionToken) return;
+    setRunning(true);
+    try {
+      setOutput(await runCode(sessionToken, code, language));
+    } catch (error) {
+      setOutput({
+        success: false,
+        stdout: '',
+        stderr: error instanceof Error ? error.message : 'Execution failed',
+        exit_code: -1,
+        execution_time_ms: 0,
+        error_type: 'CLIENT_ERROR',
+      });
+    } finally {
+      setRunning(false);
     }
   };
 
-  // Summary statistics
-  const errorCount = diagnostics.filter(d => d.severity === 'error').length;
-  const warningCount = diagnostics.filter(d => d.severity === 'warning').length;
-  const infoCount = diagnostics.filter(d => d.severity === 'info').length;
-  const suspicionCount = diagnostics.filter(d => d.severity === 'suspicion').length;
+  const loadStarter = (value: string) => {
+    setCode(value);
+    setOutput(null);
+  };
+
+  const handleScreen = (screenText: string, findings: Diagnostic[]) => {
+    setScreenCode(screenText);
+    setScreenDiagnostics(findings);
+  };
+
+  const effectiveCode = screenCode || code;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      {/* Header */}
-      <header className="border-b border-gray-800 bg-gray-900">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* Title */}
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">AI</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold">Real-Time Coding Screener</h1>
-                <p className="text-sm text-gray-400">Live Static Analysis</p>
-              </div>
-            </div>
-
-            {/* Status & Controls */}
-            <div className="flex items-center space-x-4">
-              {/* Performance Stats */}
-              <div className="text-sm text-gray-400">
-                {analysisCount > 0 && (
-                  <span>
-                    {analysisCount} analyses • Avg: {averageAnalysisTime}ms
-                  </span>
-                )}
-              </div>
-
-              {/* Connection Status */}
-              <div className={`px-3 py-1 rounded-full text-xs font-medium ${getConnectionStatusStyle()}`}>
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-current rounded-full"></div>
-                  <span className="capitalize">{connectionStatus}</span>
-                </div>
-              </div>
-
-              {/* Theme Toggle */}
-              <button
-                onClick={() => setTheme(theme === 'vs-dark' ? 'vs-light' : 'vs-dark')}
-                className="px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded text-sm transition-colors"
-              >
-                {theme === 'vs-dark' ? '☀️' : '🌙'}
-              </button>
-
-              {/* Connection Controls */}
-              <div className="flex items-center space-x-2">
-                {connectionStatus === 'disconnected' ? (
-                  <button
-                    onClick={() => connect(getSessionToken())}
-                    className="px-3 py-1 bg-green-700 hover:bg-green-600 rounded text-sm transition-colors"
-                  >
-                    Connect
-                  </button>
-                ) : (
-                  <button
-                    onClick={disconnect}
-                    className="px-3 py-1 bg-red-700 hover:bg-red-600 rounded text-sm transition-colors"
-                  >
-                    Disconnect
-                  </button>
-                )}
-              </div>
+      <header className="sticky top-0 z-40 border-b border-gray-800 bg-gray-950/95 backdrop-blur">
+        <div className="flex h-14 items-center justify-between px-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-xs font-bold">AI</div>
+            <div>
+              <div className="text-sm font-semibold">AI Coding Mentor</div>
+              <div className="text-[10px] text-gray-500">Real-time analysis · sandbox · progressive mentoring</div>
             </div>
           </div>
 
-          {/* Quick Stats Bar */}
-          <div className="mt-4 flex items-center space-x-6 text-sm">
-            <div className="flex items-center space-x-2">
-              <span className="text-gray-400">Problems:</span>
-              <div className="flex items-center space-x-3">
-                {errorCount > 0 && (
-                  <span className="text-red-400">
-                    {errorCount} error{errorCount !== 1 ? 's' : ''}
-                  </span>
-                )}
-                {warningCount > 0 && (
-                  <span className="text-yellow-400">
-                    {warningCount} warning{warningCount !== 1 ? 's' : ''}
-                  </span>
-                )}
-                {infoCount > 0 && (
-                  <span className="text-blue-400">
-                    {infoCount} suggestion{infoCount !== 1 ? 's' : ''}
-                  </span>
-                )}
-                {suspicionCount > 0 && (
-                  <span className="text-orange-400">
-                    {suspicionCount} suspicion{suspicionCount !== 1 ? 's' : ''}
-                  </span>
-                )}
-                {diagnostics.length === 0 && (
-                  <span className="text-green-400">All good ✓</span>
-                )}
-              </div>
-            </div>
-
-            {lastAnalysisTime !== null && (
-              <div className="flex items-center space-x-2">
-                <span className="text-gray-400">Last analysis:</span>
-                <span className={`font-mono ${lastAnalysisTime > 100 ? 'text-yellow-400' : 'text-green-400'}`}>
-                  {lastAnalysisTime}ms
-                </span>
-              </div>
-            )}
-
-            <div className="flex items-center space-x-2">
-              <span className="text-gray-400">Session:</span>
-              <span className="font-mono text-gray-300 text-xs">
-                {sessionToken?.substring(0, 8)}...
-              </span>
-            </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={language}
+              onChange={event => {
+                setLanguage(event.target.value);
+                setOutput(null);
+                setScreenDiagnostics([]);
+                setScreenCode('');
+              }}
+              className="rounded-lg border border-gray-700 bg-gray-900 px-2 py-1.5 text-xs text-gray-200"
+            >
+              {LANGUAGES.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+            <span className="rounded-full border border-white/10 px-2 py-1 text-[10px] text-gray-500">
+              {connectionStatus}
+            </span>
+            <button onClick={() => setTheme(theme === 'vs-dark' ? 'vs-light' : 'vs-dark')} className="rounded-lg border border-white/10 px-2 py-1 text-xs hover:bg-white/5">
+              {theme === 'vs-dark' ? '☀' : '☾'}
+            </button>
+            <button onClick={execute} disabled={!sessionToken || running} className="rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-gray-950 disabled:opacity-40">
+              {running ? 'Running…' : 'Run code'}
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex h-screen">
-        {/* Editor Section */}
-        <div className="flex-1 flex flex-col">
-          <div className="flex-1 p-4">
-            <CodeEditor
-              initialCode={code}
-              language="python"
-              theme={theme}
-              height="calc(100vh - 200px)"
-              onCodeChange={setCode}
-              readOnly={false}
-            />
+      <main className="grid min-h-[calc(100vh-56px)] grid-cols-[minmax(0,1fr)_400px]">
+        <section className="min-w-0 border-r border-gray-800 p-3">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="text-xs text-gray-500">
+              {diagnostics.length} active issue{diagnostics.length === 1 ? '' : 's'}
+              {lastAnalysisTime !== null ? ' · ' + Math.round(lastAnalysisTime) + 'ms' : ''}
+              {analysisCount > 0 ? ' · avg ' + averageAnalysisTime + 'ms' : ''}
+            </div>
+            {problem && <div className="text-[10px] text-blue-300">{problem.title}</div>}
           </div>
-        </div>
 
-        {/* Diagnostics Sidebar */}
-        <div className="w-96 border-l border-gray-800 flex flex-col">
-          <DiagnosticPanel
-            onDiagnosticClick={handleDiagnosticClick}
-            className="flex-1"
+          <CodeEditor
+            initialCode={code}
+            language={language}
+            theme={theme}
+            height="calc(100vh - 150px)"
+            onCodeChange={setCode}
           />
 
-          {/* Selected Diagnostic Detail */}
-          {selectedDiagnostic && (
-            <div className="border-t border-gray-800 bg-gray-900 p-4">
-              <div className="mb-2">
-                <h4 className="text-sm font-medium text-gray-200">Selected Problem</h4>
-              </div>
-              <div className="space-y-2">
-                <div className="text-xs text-gray-400 font-mono">
-                  Line {selectedDiagnostic.line}:{selectedDiagnostic.column + 1}
-                  {selectedDiagnostic.code && ` • ${selectedDiagnostic.code}`}
+          <div className="mt-3 rounded-xl border border-gray-800 bg-gray-900/70 p-3">
+            <div className="mb-2 text-xs font-semibold text-gray-300">Execution</div>
+            {output ? (
+              <div className="space-y-2 text-xs">
+                <div className={output.success ? 'text-emerald-300' : 'text-red-300'}>
+                  {output.success ? 'Execution completed' : 'Execution failed'}
+                  {' · ' + output.execution_time_ms + 'ms'}
                 </div>
-                <div className="text-sm text-gray-300">
-                  {selectedDiagnostic.message}
-                </div>
-                {selectedDiagnostic.fix_suggestion && (
-                  <div className="text-sm text-green-400 bg-green-900/20 p-2 rounded">
-                    <div className="flex items-center space-x-1 mb-1">
-                      <span>💡</span>
-                      <span className="font-medium">Suggestion</span>
-                    </div>
-                    <div>{selectedDiagnostic.fix_suggestion}</div>
-                  </div>
-                )}
-                <button
-                  onClick={() => setSelectedDiagnostic(null)}
-                  className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-                >
-                  Clear selection
-                </button>
+                <pre className="max-h-36 overflow-auto rounded-lg bg-black/30 p-2 text-gray-300">{output.stdout || '(no stdout)'}</pre>
+                {output.stderr && <pre className="max-h-36 overflow-auto rounded-lg bg-red-950/20 p-2 text-red-200">{output.stderr}</pre>}
               </div>
+            ) : (
+              <p className="text-xs text-gray-600">Run the current program in the isolated sandbox.</p>
+            )}
+          </div>
+        </section>
+
+        <aside className="min-w-0 space-y-3 overflow-y-auto bg-gray-950 p-3">
+          <div className="flex rounded-xl border border-gray-800 bg-gray-900/70 p-1">
+            {[
+              ['problems', 'Problems'],
+              ['analytics', 'Analytics'],
+              ['screen', 'Screen'],
+            ].map(([value, label]) => (
+              <button key={value} onClick={() => setTab(value as typeof tab)} className={'flex-1 rounded-lg px-2 py-2 text-xs ' + (tab === value ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-200')}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <DiagnosticPanel />
+          {tab === 'problems' && sessionToken && (
+            <div className="h-[360px]">
+              <ProblemPanel
+                sessionToken={sessionToken}
+                language={language}
+                code={code}
+                onLoadStarter={loadStarter}
+                onSelect={setProblem}
+              />
             </div>
           )}
-        </div>
+          {tab === 'analytics' && <AnalyticsPanel sessionToken={sessionToken} />}
+          {tab === 'screen' && (
+            <ScreenCapturePanel
+              sessionToken={sessionToken}
+              language={language}
+              enabled={true}
+              onDetected={handleScreen}
+            />
+          )}
+
+          {screenCode && (
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
+              <div className="mb-1 text-[10px] uppercase tracking-wide text-emerald-300">Screen snapshot</div>
+              <pre className="max-h-32 overflow-auto whitespace-pre-wrap text-[10px] text-gray-400">{effectiveCode}</pre>
+            </div>
+          )}
+        </aside>
       </main>
+
+      <FloatingMentor
+        sessionToken={sessionToken}
+        code={code}
+        diagnostics={combinedDiagnostics}
+      />
     </div>
   );
 }
