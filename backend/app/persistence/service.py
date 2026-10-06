@@ -84,6 +84,7 @@ async def record_analysis(
         findings=findings,
         severity=severity,
         is_blocking=severity == "error",
+        analysis_time_ms=float(timings.get("total", 0.0)),
     )
     db.add(record)
     await db.flush()
