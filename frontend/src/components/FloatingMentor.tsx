@@ -1,8 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import type { Diagnostic } from '../types/analysis';
 import { requestHint, sendHintFeedback, type Hint } from '../services/api';
 
-interface FloatingMentorProps { sessionToken: string | null; code: string; diagnostics: Diagnostic[]; enabled?: boolean; }
+interface FloatingMentorProps {
+  sessionToken: string | null;
+  code: string;
+  diagnostics: Diagnostic[];
+  enabled?: boolean;
+}
 
 export default function FloatingMentor({ sessionToken, code, diagnostics, enabled = true }: FloatingMentorProps) {
   const [collapsed, setCollapsed] = useState(false);
@@ -41,7 +46,7 @@ export default function FloatingMentor({ sessionToken, code, diagnostics, enable
     } finally { setBusy(false); }
   };
 
-  const onPointerDown = (event: React.PointerEvent) => {
+  const onPointerDown = (event: PointerEvent) => {
     const rect = cardRef.current?.getBoundingClientRect();
     if (!rect) return;
     dragRef.current = { dx: event.clientX - rect.left, dy: event.clientY - rect.top };
