@@ -17,6 +17,38 @@ services:
       timeout: 5s
       retries: 10
 
+  sandbox-python:
+    build:
+      context: ./sandbox/images/python
+      dockerfile: Dockerfile
+    image: coding-mentor-python:latest
+    restart: "no"
+    command: ["python", "--version"]
+
+  sandbox-javascript:
+    build:
+      context: ./sandbox/images/javascript
+      dockerfile: Dockerfile
+    image: coding-mentor-javascript:latest
+    restart: "no"
+    command: ["node", "--version"]
+
+  sandbox-cpp:
+    build:
+      context: ./sandbox/images/cpp
+      dockerfile: Dockerfile
+    image: coding-mentor-cpp:latest
+    restart: "no"
+    command: ["g++", "--version"]
+
+  sandbox-java:
+    build:
+      context: ./sandbox/images/java
+      dockerfile: Dockerfile
+    image: coding-mentor-java:latest
+    restart: "no"
+    command: ["java", "-version"]
+
   sandbox:
     build:
       context: ./sandbox
@@ -25,19 +57,26 @@ services:
       SANDBOX_SECRET: dev-only-change-me
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      sandbox-python:
+        condition: service_completed_successfully
+      sandbox-javascript:
+        condition: service_completed_successfully
+      sandbox-cpp:
+        condition: service_completed_successfully
+      sandbox-java:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/health').read()"]
       interval: 10s
       timeout: 5s
       retries: 10
-    depends_on:
-      db:
-        condition: service_healthy
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: development
     ports:
       - "8000:8000"
     environment:
@@ -45,8 +84,13 @@ services:
       SANDBOX_URL: http://sandbox:8100
       SANDBOX_SECRET: dev-only-change-me
       EXECUTION_ENABLED: "true"
-      FEATURE_SCREEN_SOURCE: "false"
+      FEATURE_SCREEN_SOURCE: "true"
       LLM_ENABLED: "true"
+      LLM_BASE_URL: http://host.docker.internal:8080/v1
+      LLM_API_KEY: "none"
+      LLM_MODEL: "auto"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
