@@ -1,26 +1,26 @@
 # Frontend Development
-FROM node:18-alpine as frontend-dev
+FROM node:24-alpine as frontend-dev
 
 # Set working directory
 WORKDIR /app
 
 # Copy package files
-COPY frontend/package.json frontend/pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml ./
 
 # Install pnpm
 RUN npm install -g pnpm
 
 # Install dependencies
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
 # Copy source code
-COPY frontend/ .
+COPY . .
 
 # Expose port
 EXPOSE 5173
 
 # Command for development
-CMD ["pnpm", "dev"]
+CMD ["pnpm", "dev", "--host"]
 
 # Frontend Production Build
 FROM node:18-alpine as frontend-build
@@ -57,7 +57,7 @@ EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/health || exit 1
+    CMD wget -q -O - http://localhost/health >/dev/null || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
