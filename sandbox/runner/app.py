@@ -1,250 +1,167 @@
+"""Dedicated sandbox HTTP service.
+
+Only this service accesses the Docker socket. The application API talks to it
+over HTTP, keeping Docker privileges out of the API container.
 """
-Python sandbox runner application.
-Executes learner code safely in isolated containers with strict resource limits.
-"""
+
+from __future__ import annotations
 
 import asyncio
-import json
-import logging
-import os
 import tempfile
 import time
-from typing import Dict, Any, Optional
 from pathlib import Path
 
+import docker
+from docker.errors import APIError, DockerException, ImageNotFound
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-import docker
-from docker.errors import ContainerError, ImageNotFound
 
-from languages import get_language_config
-from policy import SandboxPolicy
+from languages import LANGUAGE_COMMANDS, LANGUAGE_IMAGES
 
-logger = logging.getLogger(__name__)
 
-# Request/Response models
 class ExecutionRequest(BaseModel):
-    """Request to execute code in the sandbox."""
-    code: str = Field(..., description="Code to execute")
-    language: str = Field(..., description="Programming language")
-    stdin: str = Field(default="", description="Standard input for the program")
-    timeout: int = Field(default=30, description="Execution timeout in seconds")
+    code: str = Field(..., max_length=250_000)
+    language: str = Field(..., min_length=1, max_length=32)
+    stdin: str = Field(default="", max_length=50_000)
+    timeout: int = Field(default=30, ge=1, le=60)
 
 
 class ExecutionResult(BaseModel):
-    """Result from code execution."""
     success: bool
     stdout: str
     stderr: str
     exit_code: int
-    execution_time: float
-    memory_used: Optional[int] = None
-    error_type: Optional[str] = None
+    execution_time_ms: int
+    error_type: str | None = None
 
 
 class SandboxRunner:
-    """Manages code execution in Docker containers."""
-
-    def __init__(self):
-        self.client = docker.from_env()
-        self.policy = SandboxPolicy()
-        self._ensure_images()
-
-    def _ensure_images(self):
-        """Ensure all language images are built."""
-        for lang in ["python", "java", "cpp"]:
-            image_name = f"coding-mentor-{lang}:latest"
-            try:
-                self.client.images.get(image_name)
-                logger.info(f"Found image {image_name}")
-            except ImageNotFound:
-                logger.warning(f"Image {image_name} not found - build with 'make sandbox-build'")
+    def __init__(self) -> None:
+        self.policy = {
+            "memory": 256 * 1024 * 1024,
+            "pids": 64,
+            "max_output": 1_048_576,
+        }
+        try:
+            self.client = docker.from_env()
+            self.startup_error = None
+        except DockerException as exc:
+            self.client = None
+            self.startup_error = str(exc)
 
     async def execute(self, request: ExecutionRequest) -> ExecutionResult:
-        """Execute code safely in a container."""
-        start_time = time.time()
+        if request.language.lower() not in LANGUAGE_IMAGES:
+            raise HTTPException(400, "Unsupported language")
+        if self.client is None:
+            raise HTTPException(503, "Docker is unavailable to sandbox runner")
+        return await asyncio.to_thread(self._execute_sync, request)
 
-        try:
-            # Get language configuration
-            lang_config = get_language_config(request.language)
-            if not lang_config:
-                raise ValueError(f"Unsupported language: {request.language}")
+    def _execute_sync(self, request: ExecutionRequest) -> ExecutionResult:
+        language = request.language.lower()
+        image = LANGUAGE_IMAGES[language]
+        filename, command = LANGUAGE_COMMANDS[language]
+        started = time.perf_counter()
 
-            # Create temporary directory for code
-            with tempfile.TemporaryDirectory() as temp_dir:
-                temp_path = Path(temp_dir)
+        with tempfile.TemporaryDirectory(prefix="mentor-sandbox-") as tmp:
+            root = Path(tmp)
+            (root / filename).write_text(request.code, encoding="utf-8")
+            (root / "stdin.txt").write_text(request.stdin, encoding="utf-8")
 
-                # Write code to file
-                code_file = temp_path / lang_config["filename"]
-                code_file.write_text(request.code, encoding="utf-8")
-
-                # Write stdin if provided
-                stdin_file = temp_path / "stdin.txt"
-                if request.stdin:
-                    stdin_file.write_text(request.stdin, encoding="utf-8")
-
-                # Execute in container
-                result = await self._run_container(
-                    lang_config, temp_path, request.timeout
-                )
-
-                execution_time = time.time() - start_time
-                result.execution_time = execution_time
-
-                return result
-
-        except Exception as e:
-            logger.exception("Execution failed", extra={
-                "language": request.language,
-                "error": str(e)
-            })
-
-            return ExecutionResult(
-                success=False,
-                stdout="",
-                stderr=f"Execution error: {str(e)}",
-                exit_code=-1,
-                execution_time=time.time() - start_time,
-                error_type=type(e).__name__
-            )
-
-    async def _run_container(
-        self,
-        lang_config: Dict[str, Any],
-        code_dir: Path,
-        timeout: int
-    ) -> ExecutionResult:
-        """Run code in a Docker container with safety limits."""
-
-        image_name = f"coding-mentor-{lang_config['name']}:latest"
-
-        # Container configuration
-        container_config = {
-            "image": image_name,
-            "command": lang_config["run_command"],
-            "working_dir": "/workspace",
-            "volumes": {
-                str(code_dir): {"bind": "/workspace", "mode": "ro"}
-            },
-            "mem_limit": self.policy.memory_limit,
-            "memswap_limit": self.policy.memory_limit,  # No swap
-            "cpu_period": 100000,
-            "cpu_quota": int(100000 * self.policy.cpu_limit),
-            "network_disabled": True,
-            "read_only": True,
-            "security_opt": ["no-new-privileges:true"],
-            "cap_drop": ["ALL"],
-            "user": "sandbox:sandbox",
-            "pids_limit": self.policy.max_processes,
-            "ulimits": [
-                docker.types.Ulimit(name="nproc", soft=self.policy.max_processes, hard=self.policy.max_processes),
-                docker.types.Ulimit(name="nofile", soft=64, hard=64),
-                docker.types.Ulimit(name="fsize", soft=self.policy.max_file_size, hard=self.policy.max_file_size),
-            ],
-            "environment": {
-                "PYTHONUNBUFFERED": "1",
-                "PYTHONDONTWRITEBYTECODE": "1"
-            },
-            "detach": True,
-            "remove": True
-        }
-
-        try:
-            # Run container
-            container = self.client.containers.run(**container_config)
-
-            # Wait for completion with timeout
             try:
-                exit_code = container.wait(timeout=timeout)["StatusCode"]
+                self.client.images.get(image)
+            except ImageNotFound as exc:
+                raise HTTPException(
+                    503, f"Sandbox image is unavailable: {image}"
+                ) from exc
 
-                # Get logs
-                logs = container.logs(stdout=True, stderr=True).decode("utf-8", errors="replace")
-
-                # Split stdout/stderr (simple approach)
-                stdout = logs
-                stderr = ""
-
-                return ExecutionResult(
-                    success=(exit_code == 0),
-                    stdout=stdout,
-                    stderr=stderr,
-                    exit_code=exit_code,
-                    execution_time=0  # Will be set by caller
+            container = None
+            try:
+                container = self.client.containers.run(
+                    image=image,
+                    command=["sh", "-lc", f"{command} < /workspace/stdin.txt"],
+                    working_dir="/workspace",
+                    volumes={str(root): {"bind": "/workspace", "mode": "ro"}},
+                    network_disabled=True,
+                    read_only=True,
+                    security_opt=["no-new-privileges:true"],
+                    cap_drop=["ALL"],
+                    mem_limit=self.policy["memory"],
+                    memswap_limit=self.policy["memory"],
+                    cpu_period=100000,
+                    cpu_quota=50000,
+                    pids_limit=self.policy["pids"],
+                    tmpfs={"/tmp": "rw,noexec,nosuid,nodev,size=32m"},
+                    environment={
+                        "PYTHONUNBUFFERED": "1",
+                        "PYTHONDONTWRITEBYTECODE": "1",
+                        "HOME": "/tmp",
+                        "PATH": "/usr/local/bin:/usr/bin:/bin",
+                    },
+                    user="sandbox:sandbox",
+                    detach=True,
                 )
 
-            except Exception as e:
-                # Timeout or other error
                 try:
-                    container.kill()
-                except:
-                    pass  # Container might already be dead
-
-                if "timeout" in str(e).lower():
+                    status = int(container.wait(timeout=request.timeout).get("StatusCode", 1))
+                except Exception:
+                    try:
+                        container.kill()
+                    except Exception:
+                        pass
                     return ExecutionResult(
                         success=False,
                         stdout="",
-                        stderr=f"Execution timed out after {timeout} seconds",
+                        stderr=f"Execution timed out after {request.timeout}s",
                         exit_code=-1,
-                        execution_time=0,
-                        error_type="TimeoutError"
+                        execution_time_ms=request.timeout * 1000,
+                        error_type="TIMEOUT",
                     )
-                else:
-                    raise
 
-        except ContainerError as e:
-            return ExecutionResult(
-                success=False,
-                stdout="",
-                stderr=f"Container error: {e.stderr.decode('utf-8', errors='replace') if e.stderr else str(e)}",
-                exit_code=e.exit_status,
-                execution_time=0,
-                error_type="ContainerError"
-            )
+                stdout = container.logs(stdout=True, stderr=False).decode(
+                    "utf-8", errors="replace"
+                )
+                stderr = container.logs(stdout=False, stderr=True).decode(
+                    "utf-8", errors="replace"
+                )
+                truncated = False
+                limit = self.policy["max_output"]
+                if len(stdout.encode()) > limit:
+                    stdout = stdout.encode()[:limit].decode("utf-8", errors="replace")
+                    truncated = True
+                if len(stderr.encode()) > limit:
+                    stderr = stderr.encode()[:limit].decode("utf-8", errors="replace")
+                    truncated = True
+
+                return ExecutionResult(
+                    success=status == 0,
+                    stdout=stdout,
+                    stderr=stderr,
+                    exit_code=status,
+                    execution_time_ms=int((time.perf_counter() - started) * 1000),
+                    error_type="OUTPUT_TRUNCATED" if truncated else None,
+                )
+            except APIError as exc:
+                raise HTTPException(503, str(exc)) from exc
+            finally:
+                if container is not None:
+                    try:
+                        container.remove(force=True)
+                    except Exception:
+                        pass
 
 
-# FastAPI app
-app = FastAPI(
-    title="AI Coding Mentor Sandbox",
-    description="Safe code execution service",
-    version="0.1.0"
-)
-
+app = FastAPI(title="AI Coding Mentor Sandbox Runner", version="1.0.0")
 runner = SandboxRunner()
 
 
 @app.post("/execute", response_model=ExecutionResult)
-async def execute_code(request: ExecutionRequest):
-    """Execute code safely in a sandbox."""
-
-    # Validate timeout
-    if request.timeout > 60:
-        raise HTTPException(
-            status_code=400,
-            detail="Timeout cannot exceed 60 seconds"
-        )
-
-    # Validate code size
-    if len(request.code) > 100_000:  # 100KB
-        raise HTTPException(
-            status_code=400,
-            detail="Code size cannot exceed 100KB"
-        )
-
+async def execute_code(request: ExecutionRequest) -> ExecutionResult:
     return await runner.execute(request)
 
 
 @app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy", "service": "sandbox-runner"}
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(
-        "app:app",
-        host="0.0.0.0",
-        port=8001,
-        log_level="info"
-    )
+async def health() -> dict[str, str]:
+    return {
+        "status": "healthy" if runner.client is not None else "degraded",
+        "service": "sandbox-runner",
+    }
