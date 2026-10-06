@@ -4,11 +4,13 @@ Provides grammar registry per language.
 """
 
 from typing import Dict, Optional, Any
+import threading
 import tree_sitter
 
-# Registry of language parsers
+# Language objects are immutable and safe to cache. Parser instances are kept
+# thread-local because the fast pipeline invokes analyzers concurrently.
 _LANGUAGES: Dict[str, Any] = {}
-_PARSERS: Dict[str, tree_sitter.Parser] = {}
+_PARSER_LOCAL = threading.local()
 
 
 def get_language(lang_name: str) -> Optional[Any]:
@@ -32,8 +34,13 @@ def get_language(lang_name: str) -> Optional[Any]:
 def get_parser(lang_name: str) -> Optional[tree_sitter.Parser]:
     """Get or create Tree-sitter Parser for the given language."""
     lang_name = lang_name.lower()
-    if lang_name in _PARSERS:
-        return _PARSERS[lang_name]
+    parsers = getattr(_PARSER_LOCAL, "parsers", None)
+    if parsers is None:
+        parsers = {}
+        _PARSER_LOCAL.parsers = parsers
+
+    if lang_name in parsers:
+        return parsers[lang_name]
 
     language = get_language(lang_name)
     if language is None:
@@ -41,17 +48,16 @@ def get_parser(lang_name: str) -> Optional[tree_sitter.Parser]:
 
     try:
         parser = tree_sitter.Parser(language)
-        _PARSERS[lang_name] = parser
-        return parser
     except Exception:
-        # Compatibility fallback for older/newer tree_sitter API
+        # Compatibility fallback for older/newer tree_sitter API.
         try:
             parser = tree_sitter.Parser()
             parser.set_language(language)
-            _PARSERS[lang_name] = parser
-            return parser
         except Exception:
             return None
+
+    parsers[lang_name] = parser
+    return parser
 
 
 def parse_code(code: str, language: str = "python") -> Optional[Any]:
