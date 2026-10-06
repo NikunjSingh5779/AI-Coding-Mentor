@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.analysis.pipeline import AnalysisPipeline
 from app.config import get_settings
 from app.core.database import get_db_session
 from app.persistence.service import get_session
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.vision.service import ScreenVisionService
-from app.analysis.pipeline import AnalysisPipeline
 
 router = APIRouter(prefix="/screen", tags=["screen"])
 
@@ -48,7 +48,10 @@ async def analyze_screen(
                 "height": max(1, int(region_height)),
             }
         return await _vision.analyze(
-            data, language=language, manual_region=manual_region, session_key=session_token
+            data,
+            language=language,
+            manual_region=manual_region,
+            session_key=session_token,
         )
     except RuntimeError as exc:
         raise HTTPException(503, str(exc)) from exc
