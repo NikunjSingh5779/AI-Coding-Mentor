@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.core.database import get_db_session
-from app.models.session import CodingSession, CodeAnalysis, MentorHint
+from app.models.session import CodeAnalysis, CodingSession, MentorHint
 from app.schemas.api import CreateSessionRequest, SessionResponse
 from app.persistence.service import get_session
 from app.problems.problem_bank import get_problem
