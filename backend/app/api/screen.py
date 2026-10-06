@@ -27,7 +27,8 @@ async def analyze_screen(
     db: AsyncSession = Depends(get_db_session),
 ) -> dict:
     settings = get_settings()
-    if await get_session(db, session_token) is None:
+    screen_session = await get_session(db, session_token)
+    if screen_session is None or not screen_session.is_active:
         raise HTTPException(404, "Session not found")
     if not settings.feature_screen_source:
         raise HTTPException(403, "Screen source is disabled")
