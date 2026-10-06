@@ -46,6 +46,4 @@ class SandboxClient:
                 response.raise_for_status()
                 return response.json()
         except httpx.HTTPError as exc:
-            raise SandboxUnavailable(
-                f"Sandbox service unavailable: {exc}"
-            ) from exc
+            raise SandboxUnavailable(f"Sandbox service unavailable: {exc}") from exc
