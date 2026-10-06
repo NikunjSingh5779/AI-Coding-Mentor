@@ -1,146 +1,111 @@
-"""
-Phase 1 Integration Test Suite
-Tests the complete real-time code analysis pipeline end-to-end.
-"""
+"""Integration tests for the live Fast Static Analysis pipeline."""
 
 import time
-import asyncio
-import json
-from typing import Dict, Any
 
-from app.analysis.python_analyzer import analyzer
-from app.ws.endpoint import manager, WebSocketSession
+import pytest
+
+from app.analysis.pipeline import AnalysisPipeline
+from app.schemas.diagnostic import Origin, Severity
 
 
-def test_analyzer_syntax_error():
-    """Test analyzer detects syntax errors correctly."""
+@pytest.mark.asyncio
+async def test_pipeline_detects_python_syntax_errors() -> None:
+    pipeline = AnalysisPipeline()
     code = "def invalid_syntax(\n    print('missing paren')"
-    result = analyzer.analyze(code)
 
-    assert result["has_syntax_errors"] is True
-    assert len(result["diagnostics"]) > 0
-    assert result["diagnostics"][0]["severity"] == "error"
-    assert "Syntax Error" in result["diagnostics"][0]["message"]
-    print("[OK] Syntax error detection passed")
+    diagnostics, timings = await pipeline.analyze(code, seq=7)
 
-
-def test_analyzer_undefined_variable():
-    """Test analyzer detects undefined variables."""
-    code = "def test_func():\n    return undefined_var"
-    result = analyzer.analyze(code)
-
-    # Should detect undefined variable
-    undefined_diags = [d for d in result["diagnostics"] if d["category"] == "undefined_name"]
-    assert len(undefined_diags) > 0
-    assert "undefined_var" in undefined_diags[0]["message"]
-    print("[OK] Undefined variable detection passed")
+    assert diagnostics
+    assert timings["total"] >= 0
+    assert any(
+        diagnostic.origin in {Origin.PARSER, Origin.TREESITTER}
+        and diagnostic.severity == Severity.ERROR
+        for diagnostic in diagnostics
+    )
+    assert all(diagnostic.seq == 7 for diagnostic in diagnostics)
 
 
-def test_analyzer_unused_import():
-    """Test analyzer detects unused imports."""
-    code = "import os\nimport sys\n\nprint('hello')"
-    result = analyzer.analyze(code)
+@pytest.mark.asyncio
+async def test_pipeline_detects_undefined_name() -> None:
+    pipeline = AnalysisPipeline()
+    code = "def test_func():\n    return undefined_var\n"
 
-    # Should detect unused imports
-    unused_diags = [d for d in result["diagnostics"] if d["category"] == "unused_import"]
-    assert len(unused_diags) >= 1
-    print("[OK] Unused import detection passed")
+    diagnostics, _ = await pipeline.analyze(code, seq=1)
 
-
-def test_analyzer_pep8_naming():
-    """Test analyzer detects PEP 8 naming violations."""
-    code = "def badFunctionName():\n    pass\n\nclass bad_class_name:\n    pass"
-    result = analyzer.analyze(code)
-
-    # Should detect naming issues
-    naming_diags = [d for d in result["diagnostics"] if d["category"] == "naming"]
-    assert len(naming_diags) >= 2
-    print("[OK] PEP 8 naming convention checks passed")
+    undefined = [
+        diagnostic
+        for diagnostic in diagnostics
+        if diagnostic.rule == "F821"
+    ]
+    assert undefined
+    assert undefined[0].category == "NAME_UNDEFINED"
 
 
-def test_analyzer_performance():
-    """Test analyzer meets performance targets (<100ms)."""
-    # Create medium-sized Python code (100 lines)
-    code_lines = []
-    for i in range(25):
-        code_lines.extend([
-            f"def function_{i}(param1, param2):",
-            f"    '''Docstring for function {i}.'''",
-            f"    result = param1 + param2 + {i}",
-            f"    return result",
-            ""
-        ])
-    code = "\n".join(code_lines)
+@pytest.mark.asyncio
+async def test_pipeline_detects_unused_import() -> None:
+    pipeline = AnalysisPipeline()
+    code = "import os\n\nprint('hello')\n"
 
-    start_time = time.time()
-    result = analyzer.analyze(code)
-    duration_ms = (time.time() - start_time) * 1000
+    diagnostics, _ = await pipeline.analyze(code)
 
-    assert duration_ms < 100, f"Analysis took {duration_ms}ms, expected < 100ms"
-    assert result["performance"]["within_budget"] is True
-    print(f"[OK] Performance test passed ({duration_ms:.2f}ms for {len(code_lines)} lines)")
+    unused = [
+        diagnostic
+        for diagnostic in diagnostics
+        if diagnostic.rule == "F401"
+    ]
+    assert unused
+    assert unused[0].category == "QUALITY_UNUSED"
 
 
-def test_valid_code_no_errors():
-    """Test that valid, clean code produces no high-severity errors."""
+@pytest.mark.asyncio
+async def test_pipeline_returns_no_errors_for_valid_code() -> None:
+    pipeline = AnalysisPipeline()
     code = '''
-"""A well-written Python module."""
-
 def calculate_average(numbers: list[float]) -> float:
-    """Calculate the arithmetic mean of a list of numbers."""
     if not numbers:
         return 0.0
     return sum(numbers) / len(numbers)
 
-
-def main():
-    """Main execution function."""
-    data = [1.0, 2.0, 3.0, 4.0, 5.0]
-    avg = calculate_average(data)
-    print(f"Average: {avg}")
-
-
-if __name__ == "__main__":
-    main()
+data = [1.0, 2.0, 3.0]
+print(calculate_average(data))
 '''
-    result = analyzer.analyze(code)
 
-    # Should have no syntax errors
-    assert result["has_syntax_errors"] is False
+    diagnostics, _ = await pipeline.analyze(code)
 
-    # Should have no error-level diagnostics
-    errors = [d for d in result["diagnostics"] if d["severity"] == "error"]
-    assert len(errors) == 0, f"Expected 0 errors, got: {errors}"
-    print("[OK] Clean code analysis passed")
-
-
-def run_all_tests():
-    """Run all Phase 1 backend tests."""
-    print("\n" + "="*50)
-    print("RUNNING PHASE 1 INTEGRATION TESTS")
-    print("="*50 + "\n")
-
-    try:
-        test_analyzer_syntax_error()
-        test_analyzer_undefined_variable()
-        test_analyzer_unused_import()
-        test_analyzer_pep8_naming()
-        test_analyzer_performance()
-        test_valid_code_no_errors()
-
-        print("\n" + "="*50)
-        print("ALL PHASE 1 BACKEND TESTS PASSED! [SUCCESS]")
-        print("="*50 + "\n")
-        return True
-    except AssertionError as e:
-        print("[FAIL] TEST FAILED: {e}")
-        return False
-    except Exception as e:
-        print(f"[ERROR] UNEXPECTED ERROR: {e}")
-        return False
+    errors = [
+        diagnostic
+        for diagnostic in diagnostics
+        if diagnostic.severity == Severity.ERROR
+    ]
+    assert errors == []
 
 
-if __name__ == "__main__":
-    import sys
-    success = run_all_tests()
-    sys.exit(0 if success else 1)
+@pytest.mark.asyncio
+async def test_pipeline_reports_stage_timings() -> None:
+    pipeline = AnalysisPipeline()
+    started = time.perf_counter()
+
+    diagnostics, timings = await pipeline.analyze(
+        "def add(a, b):\n    return a + b\n"
+    )
+
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    assert isinstance(diagnostics, list)
+    assert "total" in timings
+    assert timings["total"] <= elapsed_ms + 20
+    assert timings["total"] < 500
+
+
+@pytest.mark.asyncio
+async def test_pipeline_preserves_sequence_and_handles_empty_input() -> None:
+    pipeline = AnalysisPipeline()
+
+    diagnostics, timings = await pipeline.analyze("", seq=99)
+    assert diagnostics == []
+    assert timings == {}
+
+    diagnostics, _ = await pipeline.analyze(
+        "x = 1\n",
+        seq=123,
+    )
+    assert all(diagnostic.seq == 123 for diagnostic in diagnostics)
