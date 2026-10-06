@@ -52,7 +52,7 @@ export default function FloatingMentor({ sessionToken, code, diagnostics, enable
     dragRef.current = { dx: event.clientX - rect.left, dy: event.clientY - rect.top };
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
   };
-  const onPointerMove = (event: React.PointerEvent) => {
+  const onPointerMove = (event: PointerEvent) => {
     if (!dragRef.current) return;
     setPinned(false);
     setPosition({ x: Math.max(8, event.clientX - dragRef.current.dx), y: Math.max(52, event.clientY - dragRef.current.dy) });
