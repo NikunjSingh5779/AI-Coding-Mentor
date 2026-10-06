@@ -227,7 +227,7 @@ function App() {
             <ScreenCapturePanel
               sessionToken={sessionToken}
               language={language}
-              enabled={true}
+              enabled={((import.meta as { env?: { VITE_SCREEN_SOURCE_ENABLED?: string } }).env?.VITE_SCREEN_SOURCE_ENABLED ?? 'false') === 'true'}
               onDetected={handleScreen}
             />
           )}
@@ -243,7 +243,7 @@ function App() {
 
       <FloatingMentor
         sessionToken={sessionToken}
-        code={code}
+        code={screenCode || code}
         diagnostics={combinedDiagnostics}
       />
     </div>
