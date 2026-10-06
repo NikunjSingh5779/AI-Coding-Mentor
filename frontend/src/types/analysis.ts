@@ -2,7 +2,7 @@
  * TypeScript types for real-time code analysis
  */
 
-export interface Diagnostic {
+export interface Diagnostic {\n  id?: string;\n  seq?: number;
   line: number;
   column: number;
   end_line?: number | null;
@@ -12,14 +12,14 @@ export interface Diagnostic {
   source: string;
   category: string;
   code?: string | null;
-  fix_suggestion?: string | null;
+  fix_suggestion?: string | null;\n  fingerprint?: string;\n  confidence?: number;
 }
 
 export interface AnalysisResult {
   type: 'analysis_result';
   sequence: number;
   session_token: string;
-  diagnostics: Diagnostic[];
+  diagnostics: Diagnostic[];\n  stage_timings?: Record<string, number>;
   analysis_time_ms: number;
   lines_of_code: number;
   has_syntax_errors: boolean;
