@@ -144,7 +144,7 @@ if __name__ == "__main__":
               <div className="flex items-center space-x-2">
                 {connectionStatus === 'disconnected' ? (
                   <button
-                    onClick={() => connect('phase1-demo-session')}
+                    onClick={() => connect(getSessionToken())}
                     className="px-3 py-1 bg-green-700 hover:bg-green-600 rounded text-sm transition-colors"
                   >
                     Connect
