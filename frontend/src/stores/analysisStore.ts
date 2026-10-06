@@ -36,6 +36,7 @@ interface BackendDiagnostic {
   id?: string;
   seq?: number;
   origin?: string;
+  source?: string;
   rule?: string | null;
   category?: string;
   severity?: Diagnostic['severity'];
