@@ -1,11 +1,11 @@
 # Frontend Development
-FROM node:24-alpine as frontend-dev
+FROM node:24-alpine AS frontend-dev
 
 # Set working directory
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Install pnpm
 RUN npm install -g pnpm@11.8.0
@@ -23,12 +23,12 @@ EXPOSE 5173
 CMD ["pnpm", "dev", "--host"]
 
 # Frontend Production Build
-FROM node:24-alpine as frontend-build
+FROM node:24-alpine AS frontend-build
 
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Install pnpm
 RUN npm install -g pnpm@11.8.0
@@ -43,7 +43,7 @@ COPY . .
 RUN pnpm build
 
 # Production Frontend
-FROM nginx:alpine as frontend-prod
+FROM nginx:alpine AS frontend-prod
 
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/nginx.conf
