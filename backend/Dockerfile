@@ -1,5 +1,5 @@
 # Development
-FROM python:3.11-slim as development
+FROM python:3.11-slim AS development
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -22,7 +22,7 @@ RUN pip install uv
 WORKDIR /app
 
 # Copy dependency files
-COPY pyproject.toml ./
+COPY pyproject.toml README.md ./
 # Install dependencies
 RUN uv sync --dev
 
@@ -36,7 +36,7 @@ EXPOSE 8000
 CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 # Production
-FROM python:3.11-slim as production
+FROM python:3.11-slim AS production
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -59,7 +59,7 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 WORKDIR /app
 
 # Copy dependency files
-COPY pyproject.toml ./
+COPY pyproject.toml README.md ./
 # Install dependencies (production only)
 RUN uv sync --no-dev
 
