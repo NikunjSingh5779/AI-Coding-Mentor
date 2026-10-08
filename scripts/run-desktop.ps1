@@ -11,7 +11,7 @@ Write-Host "Waiting for backend readiness..."
 $ready = $false
 for ($i = 0; $i -lt 60; $i++) {
     try {
-        $response = Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/v1/ready" -TimeoutSec 2
+        $response = Invoke-RestMethod -Uri "http://127.0.0.1:8001/api/v1/ready" -TimeoutSec 2
         if ($response.status -eq "ready" -or $response.status -eq "degraded") {
             $ready = $true
             break
