@@ -84,7 +84,7 @@ services:
       EXECUTION_ENABLED: "true"
       FEATURE_SCREEN_SOURCE: "true"
       LLM_ENABLED: "true"
-      LLM_BASE_URL: http://host.docker.internal:8080/v1
+      LLM_BASE_URL: http://host.docker.internal:1919/v1
       LLM_API_KEY: "none"
       LLM_MODEL: "auto"
     extra_hosts:
