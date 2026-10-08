@@ -16,8 +16,8 @@ Pop-Location
 
 Write-Host "[2/3] Building production web app..."
 Push-Location "$RepoRoot\frontend"
-$env:VITE_API_URL = "http://localhost:8000"
-$env:VITE_WS_URL = "ws://localhost:8000"
+$env:VITE_API_URL = "http://localhost:8001"
+$env:VITE_WS_URL = "ws://localhost:8001"
 $env:VITE_SCREEN_SOURCE_ENABLED = "false"
 pnpm build
 Pop-Location
