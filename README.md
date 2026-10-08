@@ -65,8 +65,8 @@ Services:
 
 ```text
 Frontend       http://localhost:5173
-Backend        http://localhost:8000
-API docs       http://localhost:8000/docs  (when DEBUG=true)
+Backend        http://localhost:8001
+API docs       http://localhost:8001/docs  (when DEBUG=true)
 PostgreSQL     localhost:5433
 Sandbox        internal-only on port 8100
 ```
