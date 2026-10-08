@@ -120,7 +120,7 @@ Install the optional always-on-top companion:
 python -m venv .venv-overlay
 .\.venv-overlay\Scripts\Activate.ps1
 pip install -r desktop_overlay/requirements.txt
-python desktop_overlay/app.py --server http://127.0.0.1:8000 --language python --watch
+python desktop_overlay/app.py --server http://127.0.0.1:8001 --language python --watch
 ```
 
 When no session token is supplied, the overlay creates one through the API.
