@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     # Mentor / LLM
     llm_enabled: bool = True
     llm_provider: str = "openai_compatible"
-    llm_base_url: str = "http://127.0.0.1:8080/v1"
+    llm_base_url: str = "http://127.0.0.1:1919/v1"
     llm_api_key: str = "none"
     llm_model: str = "auto"
     llm_timeout: float = 30.0
