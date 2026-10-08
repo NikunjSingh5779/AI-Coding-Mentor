@@ -76,7 +76,7 @@ services:
       dockerfile: Dockerfile
       target: development
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
       DATABASE_URL: postgresql+asyncpg://mentor:password@db:5432/mentor
       SANDBOX_URL: http://sandbox:8100
