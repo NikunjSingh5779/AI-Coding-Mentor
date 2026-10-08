@@ -78,7 +78,7 @@ Compose builds the Python, JavaScript, C/C++, and Java execution images before s
 The mentor uses an OpenAI-compatible API. The default configuration is compatible with the local model endpoint used by this project:
 
 ```text
-LLM_BASE_URL=http://127.0.0.1:8080/v1
+LLM_BASE_URL=http://127.0.0.1:1919/v1
 LLM_MODEL=auto
 ```
 
